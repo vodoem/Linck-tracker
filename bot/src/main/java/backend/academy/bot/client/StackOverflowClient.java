@@ -7,6 +7,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.util.UriComponentsBuilder;
+import java.util.Map;
 
 @Component
 public class StackOverflowClient {
@@ -18,13 +20,19 @@ public class StackOverflowClient {
         this.baseUrl = "https://api.stackexchange.com/2.3";
     }
 
-    // Получение даты последнего обновления вопроса
-    public long getLastActivityDate(int questionId) {
-        String url = baseUrl + "/questions/" + questionId + "?site=stackoverflow&filter=!9_bDDxJY5";
+    public long getLastActivityDate(int questionId, String site) {
+        // Формируем URL с параметрами запроса
+        String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/questions/" + questionId)
+            .queryParam("site", site)
+            .queryParam("filter", "!9_bDDxJY5") // Стандартный фильтр
+            .toUriString();
+
         HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept", "application/json");
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
+        // Выполняем GET-запрос
         ResponseEntity<JsonNode> response = restTemplate.exchange(
             url,
             HttpMethod.GET,
@@ -32,6 +40,13 @@ public class StackOverflowClient {
             JsonNode.class
         );
 
-        return response.getBody().get("items").get(0).get("last_activity_date").asLong();
+        // Проверяем ответ API
+        JsonNode body = response.getBody();
+        if (body == null || !body.has("items") || body.get("items").isEmpty()) {
+            throw new RuntimeException("Invalid response from StackExchange API: 'items' field is missing or empty.");
+        }
+
+        // Возвращаем дату последней активности
+        return body.get("items").get(0).get("last_activity_date").asLong();
     }
 }

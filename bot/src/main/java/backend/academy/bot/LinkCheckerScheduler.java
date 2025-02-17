@@ -72,13 +72,20 @@ public class LinkCheckerScheduler {
     }
 
     private void checkStackOverflowLink(String link) {
-        int questionId = Integer.parseInt(link.split("/")[4]);
-        long lastActivityDate = stackOverflowClient.getLastActivityDate(questionId);
+        // Извлекаем ID вопроса и домен из ссылки
+        String[] parts = link.split("/");
+        int questionId = Integer.parseInt(parts[4]);
+        String site = parts[2]; // Например, "ru.stackoverflow.com"
+
+        // Получаем дату последней активности с учетом домена
+        long lastActivityDate = stackOverflowClient.getLastActivityDate(questionId, site);
         Instant lastActivityInstant = Instant.ofEpochSecond(lastActivityDate);
 
-        String cachedKey = "stackoverflow:" + questionId;
+        // Формируем ключ для кэша
+        String cachedKey = site + ":" + questionId;
         Instant cachedDate = lastUpdatedCache.getOrDefault(cachedKey, Instant.MIN);
 
+        // Проверяем, была ли активность после последнего обновления
         if (lastActivityInstant.isAfter(cachedDate)) {
             lastUpdatedCache.put(cachedKey, lastActivityInstant);
             Long chatId = linkToChatIdMap.get(link); // Получаем chatId для ссылки
