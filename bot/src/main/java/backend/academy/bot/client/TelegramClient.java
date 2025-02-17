@@ -1,94 +1,48 @@
 package backend.academy.bot.client;
 
 import backend.academy.bot.BotConfig;
+import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.BotCommand;
+import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.request.SetMyCommands;
+import com.pengrad.telegrambot.response.BaseResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class TelegramClient {
-    private final RestTemplate restTemplate;
-    private final String botToken;
+    private final TelegramBot telegramBot;
 
-    public TelegramClient(BotConfig botConfig) {
-        this.restTemplate = new RestTemplate();
-        this.botToken = botConfig.telegramToken(); // Получаем токен из BotConfig
+    public TelegramClient(TelegramBot telegramBot) {
+        this.telegramBot = telegramBot;
     }
 
     // Отправка сообщения
     public void sendMessage(long chatId, String text) {
-        String url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-
-        Map<String, Object> body = Map.of(
-            "chat_id", chatId,
-            "text", text
-        );
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-
-        ResponseEntity<Void> response = restTemplate.exchange(
-            url,
-            HttpMethod.POST,
-            entity,
-            Void.class
-        );
-
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Failed to send message");
+        BaseResponse response = telegramBot.execute(new SendMessage(chatId, text));
+        if (!response.isOk()) {
+            throw new RuntimeException("Failed to send message: " + response.description());
         }
     }
 
     // Регистрация команд
     public void setMyCommands() {
-        String url = "https://api.telegram.org/bot" + botToken + "/setMyCommands";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-
-        List<Map<String, String>> commands = List.of(
-            Map.of("command", "start", "description", "Зарегистрироваться"),
-            Map.of("command", "help", "description",  "Показать доступные команды"),
-            Map.of("command", "track", "description", "Добавить ссылку для отслеживания"),
-            Map.of("command", "untrack", "description", "Удалить ссылку из отслеживания"),
-            Map.of("command", "list", "description", "Показать список отслеживаемых ссылок")
-        );
-
-        Map<String, Object> body = Map.of("commands", commands);
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-
-        ResponseEntity<Void> response = restTemplate.exchange(
-            url,
-            HttpMethod.POST,
-            entity,
-            Void.class
-        );
-
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Failed to set commands");
+        BaseResponse response = telegramBot.execute(new SetMyCommands(
+                new BotCommand("start", "Зарегистрироваться"),
+                new BotCommand("help", "Показать доступные команды"),
+                new BotCommand("track", "Добавить ссылку для отслеживания"),
+                new BotCommand("untrack", "Удалить ссылку из отслеживания"),
+                new BotCommand("list", "Показать список отслеживаемых ссылок")
+        ));
+        if (!response.isOk()) {
+            throw new RuntimeException("Failed to set commands: " + response.description());
         }
-    }
-
-    // Получение обновлений через Long Polling
-    public List<Map<String, Object>> getUpdates(int offset) {
-        String url = "https://api.telegram.org/bot" + botToken + "/getUpdates?offset=" + offset;
-        System.out.println("Выполняется запрос к Telegram API: " + url);
-
-        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-        System.out.println("Ответ от Telegram API: " + response.getBody());
-
-        return (List<Map<String, Object>>) response.getBody().get("result");
-    }
-
-    public void clearUpdates() {
-        String url = "https://api.telegram.org/bot" + botToken + "/getUpdates?offset=" + Integer.MAX_VALUE;
-        System.out.println("Очистка старых обновлений...");
-        restTemplate.getForEntity(url, Map.class);
     }
 }

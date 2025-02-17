@@ -1,6 +1,13 @@
 package backend.academy.bot;
 
 import backend.academy.bot.client.TelegramClient;
+import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.request.GetUpdates;
+import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.GetUpdatesResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import java.util.List;
@@ -8,47 +15,48 @@ import java.util.Map;
 
 @Component
 public class TelegramPollingService {
-    private final TelegramClient telegramClient;
+    private final TelegramBot telegramBot;
     private final BotService botService;
     private int offset = 0;
+    private static final Logger logger = LoggerFactory.getLogger(TelegramPollingService.class);
 
-    public TelegramPollingService(TelegramClient telegramClient, BotService botService) {
-        this.telegramClient = telegramClient;
+    public TelegramPollingService(TelegramBot telegramBot, BotService botService) {
+        this.telegramBot = telegramBot;
         this.botService = botService;
     }
 
     @Scheduled(fixedRate = 1000)
     public void pollUpdates() {
-        // Получаем обновления с текущего offset
-        List<Map<String, Object>> updates = telegramClient.getUpdates(offset);
+        GetUpdatesResponse updatesResponse = telegramBot.execute(new GetUpdates().offset(offset).limit(100));
+        List<Update> updates = updatesResponse.updates();
 
-        for (Map<String, Object> update : updates) {
-            int updateId = (int) update.get("update_id");
+        for (Update update : updates) {
+            try {
+                if (update.message() == null) {
+                    logger.info("Пропускаем обновление без сообщения.");
+                    continue;
+                }
 
-            // Обрабатываем только сообщения (игнорируем другие типы обновлений)
-            Map<String, Object> message = (Map<String, Object>) update.get("message");
-            if (message != null) {
-                long chatId = ((Number) ((Map<String, Object>) message.get("chat")).get("id")).longValue();
-                String text = (String) message.get("text");
+                long chatId = update.message().chat().id();
+                String text = update.message().text();
 
                 if (text == null) {
                     System.out.println("Получено сообщение без текста от chatId=" + chatId);
                     continue;
                 }
 
-                // Проверяем, является ли текст командой
                 if (text.startsWith("/")) {
                     String response = botService.handleCommand(text, chatId);
-                    telegramClient.sendMessage(chatId, response);
+                    telegramBot.execute(new SendMessage(chatId, response));
                 } else {
-                    // Обрабатываем текстовые сообщения
                     String response = botService.handleTextMessage(chatId, text);
-                    telegramClient.sendMessage(chatId, response);
+                    telegramBot.execute(new SendMessage(chatId, response));
                 }
-            }
 
-            // Обновляем offset до следующего update_id
-            offset = updateId + 1;
+                offset = update.updateId() + 1;
+            }catch (Exception e) {
+                logger.error("Ошибка при обработке обновления: {}", e.getMessage(), e);
+            }
         }
     }
 }

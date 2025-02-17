@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableConfigurationProperties({BotConfig.class})
 @EnableScheduling
-public class BotApplication implements CommandLineRunner{
+public class BotApplication implements CommandLineRunner {
     private final TelegramClient telegramClient;
 
     public BotApplication(TelegramClient telegramClient) {
@@ -25,6 +25,5 @@ public class BotApplication implements CommandLineRunner{
     public void run(String... args) throws Exception {
         telegramClient.setMyCommands();
         System.out.println("Команды бота успешно зарегистрированы.");
-        telegramClient.clearUpdates();
     }
 }
