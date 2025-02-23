@@ -1,4 +1,4 @@
-package backend.academy.bot;
+package backend.academy.bot.controller;
 
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.bot.model.LinkUpdate;

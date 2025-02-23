@@ -1,4 +1,4 @@
-package backend.academy.bot.repository;
+package backend.academy.scrapper.repository;
 
 import java.util.List;
 
@@ -7,5 +7,6 @@ public interface LinkRepository {
     void removeLink(long chatId, String link);
     List<String> getLinks(long chatId);
     void registerChat(long chatId);
+    void deleteChat(long chatId);
     List<Long> getAllChatIds();
 }

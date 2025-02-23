@@ -1,4 +1,4 @@
-package backend.academy.bot;
+package backend.academy.bot.config;
 
 import com.pengrad.telegrambot.TelegramBot;
 import org.springframework.context.annotation.Bean;

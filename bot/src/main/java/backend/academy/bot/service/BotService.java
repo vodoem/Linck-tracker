@@ -1,20 +1,23 @@
-package backend.academy.bot;
+package backend.academy.bot.service;
 
-import backend.academy.bot.repository.LinkRepository;
+
+import backend.academy.bot.client.ScrapperClient;
+import backend.academy.bot.model.LinkResponse;
+import backend.academy.bot.model.ListLinksResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class BotService {
-    private final LinkRepository linkRepository;
+    private final ScrapperClient scrapperClient;
     private final BotStateMachine botStateMachine;
 
-    public BotService(LinkRepository linkRepository, BotStateMachine botStateMachine) {
-        this.linkRepository = linkRepository;
+    public BotService(ScrapperClient scrapperClient, BotStateMachine botStateMachine) {
+        this.scrapperClient = scrapperClient;
         this.botStateMachine = botStateMachine;
     }
-
     // Обработка команд
     public String handleCommand(String command, long chatId) {
         if (command == null) {
@@ -23,7 +26,7 @@ public class BotService {
         }
         switch (command) {
             case "/start":
-                linkRepository.registerChat(chatId);
+                scrapperClient.registerChat(chatId);
                 return "Добро пожаловать! Используйте /help для просмотра доступных команд.";
             case "/help":
                 return """
@@ -40,11 +43,14 @@ public class BotService {
                 botStateMachine.setState(chatId, "waiting_for_untrack_link");
                 return "Введите ссылку для удаления.";
             case "/list":
-                List<String> links = linkRepository.getLinks(chatId);
-                if (links.isEmpty()) {
+                ListLinksResponse linksResponse = scrapperClient.getLinks(chatId);
+                if (linksResponse.links().isEmpty()) {
                     return "У вас нет отслеживаемых ссылок.";
                 }
-                return "Ваши отслеживаемые ссылки:\n" + String.join("\n", links);
+                return "Ваши отслеживаемые ссылки:\n" +
+                    linksResponse.links().stream()
+                        .map(LinkResponse::url)
+                        .collect(Collectors.joining("\n"));
             default:
                 return "Неизвестная команда. Используйте /help для просмотра доступных команд.";
         }
@@ -55,11 +61,11 @@ public class BotService {
         String currentState = botStateMachine.getState(chatId);
         switch (currentState) {
             case "waiting_for_link":
-                linkRepository.addLink(chatId, message);
+                scrapperClient.addLink(chatId, message, List.of(), List.of());
                 botStateMachine.clearState(chatId);
                 return "Ссылка добавлена в отслеживание.";
             case "waiting_for_untrack_link":
-                linkRepository.removeLink(chatId, message);
+                scrapperClient.removeLink(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Ссылка удалена из отслеживания.";
             default:

@@ -1,6 +1,6 @@
 package backend.academy.bot;
 
-import backend.academy.bot.client.TelegramClient;
+import backend.academy.bot.service.BotService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.GetUpdates;
@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class TelegramPollingService {

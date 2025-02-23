@@ -42,13 +42,13 @@ public class ScrapperClient {
         restTemplate.delete(url);
     }
 
-    public List<LinkResponse> getLinks(long chatId) {
+    public ListLinksResponse getLinks(long chatId) {
         String url = baseUrl + "/links";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Tg-Chat-Id", String.valueOf(chatId));
-
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
+        // Используем ParameterizedTypeReference для корректной десериализации ListLinksResponse
         ResponseEntity<ListLinksResponse> response = restTemplate.exchange(
             url,
             HttpMethod.GET,
@@ -56,7 +56,7 @@ public class ScrapperClient {
             new ParameterizedTypeReference<ListLinksResponse>() {}
         );
 
-        return response.getBody().links();
+        return response.getBody();
     }
 
     // 4. Добавление новой ссылки

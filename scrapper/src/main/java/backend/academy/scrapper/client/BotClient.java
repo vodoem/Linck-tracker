@@ -1,4 +1,4 @@
-package backend.academy.bot.client;
+package backend.academy.scrapper.client;
 
 import backend.academy.bot.model.LinkUpdate;
 import org.springframework.http.ResponseEntity;

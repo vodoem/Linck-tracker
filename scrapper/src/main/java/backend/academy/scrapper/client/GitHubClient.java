@@ -1,6 +1,5 @@
-package backend.academy.bot.client;
+package backend.academy.scrapper.client;
 
-import backend.academy.bot.TelegramPollingService;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;

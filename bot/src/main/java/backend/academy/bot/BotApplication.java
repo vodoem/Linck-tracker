@@ -1,6 +1,7 @@
 package backend.academy.bot;
 
 import backend.academy.bot.client.TelegramClient;
+import backend.academy.bot.config.BotConfig;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

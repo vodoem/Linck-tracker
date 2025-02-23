@@ -1,10 +1,10 @@
-package backend.academy.bot;
+package backend.academy.scrapper.service;
 
-import backend.academy.bot.client.BotClient;
-import backend.academy.bot.client.GitHubClient;
-import backend.academy.bot.client.StackOverflowClient;
+import backend.academy.scrapper.client.BotClient;
+import backend.academy.scrapper.client.GitHubClient;
+import backend.academy.scrapper.client.StackOverflowClient;
 import backend.academy.bot.model.LinkUpdate;
-import backend.academy.bot.repository.LinkRepository;
+import backend.academy.scrapper.repository.LinkRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import java.time.Instant;
