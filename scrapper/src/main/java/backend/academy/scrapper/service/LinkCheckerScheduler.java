@@ -13,96 +13,60 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class LinkCheckerScheduler {
     private final LinkRepository linkRepository;
-    private final GitHubClient gitHubClient;
-    private final StackOverflowClient stackOverflowClient;
     private final BotClient botClient;
+    private final Map<String, LinkChecker> linkCheckers; // Карта для хранения стратегий
     private static final Logger logger = LoggerFactory.getLogger(LinkCheckerScheduler.class);
 
-    // Кэш для хранения последних дат обновлений
-    private final Map<String, Instant> lastUpdatedCache = new ConcurrentHashMap<>();
-    private final Map<String, Long> linkToChatIdMap = new ConcurrentHashMap<>();
-
-    public LinkCheckerScheduler(LinkRepository linkRepository, GitHubClient gitHubClient,
-                                StackOverflowClient stackOverflowClient, BotClient botClient) {
+    public LinkCheckerScheduler(LinkRepository linkRepository, BotClient botClient,
+                                List<LinkChecker> linkCheckers) {
         this.linkRepository = linkRepository;
-        this.gitHubClient = gitHubClient;
-        this.stackOverflowClient = stackOverflowClient;
         this.botClient = botClient;
+
+        // Инициализация карты стратегий
+        this.linkCheckers = linkCheckers.stream()
+            .collect(Collectors.toMap(
+                checker -> checker.getClass().getSimpleName().replace("LinkChecker", "").toLowerCase(),
+                Function.identity()
+            ));
     }
 
-    @Scheduled(fixedRate = 500) // Каждую минуту
+    @Scheduled(fixedRate = 30000) // Каждые 30 секунд
     public void checkLinks() {
         List<Long> chatIds = linkRepository.getAllChatIds(); // Получаем все chatId
-        logger.info("Проверка ссылок для чатов: " + chatIds);
         for (long chatId : chatIds) {
-            logger.info("Проверка ссылок для чата: " + chatId);
             List<String> links = linkRepository.getLinks(chatId); // Получаем ссылки для каждого чата
-
             if (!links.isEmpty()) { // Проверяем только чаты с ссылками
                 for (String link : links) {
-                    logger.info("Проверка ссылки: " + link);
-                    linkToChatIdMap.put(link, chatId); // Сохраняем связь ссылка -> chatId
-
-                    if (link.contains("github.com")) {
-                        logger.info("Проверка GitHub ссылки: " + link);
-                        checkGitHubLink(link);
-                    } else if (link.contains("stackoverflow.com")) {
-                        logger.info("Проверка StackOverflow ссылки: " + link);
-                        checkStackOverflowLink(link);
-                    }
+                    processLink(chatId, link);
                 }
             }
         }
     }
 
-    private void checkGitHubLink(String link) {
-        String[] parts = link.split("/"); // Разбиваем ссылку на части
-        String owner = parts[3];
-        String repo = parts[4];
-        logger.info("Проверка GitHub репозитория: " + owner + "/" + repo);
-        String lastUpdated = gitHubClient.getLastUpdatedDate(owner, repo);
-        Instant lastUpdatedInstant = Instant.parse(lastUpdated);
+    private void processLink(long chatId, String link) {
+        String platform = detectPlatform(link); // Определяем платформу по ссылке
+        LinkChecker checker = linkCheckers.get(platform);
 
-        String cachedKey = "github:" + owner + "/" + repo;
-        Instant cachedDate = lastUpdatedCache.getOrDefault(cachedKey, Instant.MIN);
-        logger.info("Последнее обновление: " + lastUpdatedInstant);
-        logger.info("Последнее обновление из кэша: " + cachedDate);
-        if (lastUpdatedInstant.isAfter(cachedDate)) {
-
-            lastUpdatedCache.put(cachedKey, lastUpdatedInstant);
-            Long chatId = linkToChatIdMap.get(link); // Получаем chatId для ссылки
-            if (chatId != null) {
-                sendUpdate(chatId, link, "Репозиторий обновлен: " + repo);
-            }
+        if (checker != null && checker.checkForUpdates(link)) {
+            String description = checker.getUpdateDescription(link);
+            sendUpdate(chatId, link, description);
         }
     }
 
-    private void checkStackOverflowLink(String link) {
-        // Извлекаем ID вопроса и домен из ссылки
-        String[] parts = link.split("/");
-        int questionId = Integer.parseInt(parts[4]);
-        String site = parts[2]; // Например, "ru.stackoverflow.com"
-
-        // Получаем дату последней активности с учетом домена
-        long lastActivityDate = stackOverflowClient.getLastActivityDate(questionId, site);
-        Instant lastActivityInstant = Instant.ofEpochSecond(lastActivityDate);
-
-        // Формируем ключ для кэша
-        String cachedKey = site + ":" + questionId;
-        Instant cachedDate = lastUpdatedCache.getOrDefault(cachedKey, Instant.MIN);
-
-        // Проверяем, была ли активность после последнего обновления
-        if (lastActivityInstant.isAfter(cachedDate)) {
-            lastUpdatedCache.put(cachedKey, lastActivityInstant);
-            Long chatId = linkToChatIdMap.get(link); // Получаем chatId для ссылки
-            if (chatId != null) {
-                sendUpdate(chatId, link, "Новый ответ на вопрос: " + questionId);
-            }
+    private String detectPlatform(String link) {
+        if (link.contains("github.com")) {
+            return "github";
+        } else if (link.contains("stackoverflow.com")) {
+            return "stackoverflow";
         }
+        // Добавьте другие платформы здесь
+        return null;
     }
 
     private void sendUpdate(long chatId, String link, String description) {

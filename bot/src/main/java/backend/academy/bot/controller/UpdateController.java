@@ -2,6 +2,7 @@ package backend.academy.bot.controller;
 
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.bot.model.LinkUpdate;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +20,7 @@ public class UpdateController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> handleUpdate(@RequestBody LinkUpdate linkUpdate) {
+    public ResponseEntity<Void> handleUpdate(@RequestBody @Valid LinkUpdate linkUpdate) {
         // Логика обработки обновления
         System.out.println("Получено обновление: " + linkUpdate);
 
