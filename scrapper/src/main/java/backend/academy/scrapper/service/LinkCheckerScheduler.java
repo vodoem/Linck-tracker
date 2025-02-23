@@ -5,6 +5,8 @@ import backend.academy.scrapper.client.GitHubClient;
 import backend.academy.scrapper.client.StackOverflowClient;
 import backend.academy.bot.model.LinkUpdate;
 import backend.academy.scrapper.repository.LinkRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import java.time.Instant;
@@ -18,6 +20,7 @@ public class LinkCheckerScheduler {
     private final GitHubClient gitHubClient;
     private final StackOverflowClient stackOverflowClient;
     private final BotClient botClient;
+    private static final Logger logger = LoggerFactory.getLogger(LinkCheckerScheduler.class);
 
     // Кэш для хранения последних дат обновлений
     private final Map<String, Instant> lastUpdatedCache = new ConcurrentHashMap<>();
@@ -31,20 +34,24 @@ public class LinkCheckerScheduler {
         this.botClient = botClient;
     }
 
-    @Scheduled(fixedRate = 6000) // Каждую минуту
+    @Scheduled(fixedRate = 500) // Каждую минуту
     public void checkLinks() {
         List<Long> chatIds = linkRepository.getAllChatIds(); // Получаем все chatId
-
+        logger.info("Проверка ссылок для чатов: " + chatIds);
         for (long chatId : chatIds) {
+            logger.info("Проверка ссылок для чата: " + chatId);
             List<String> links = linkRepository.getLinks(chatId); // Получаем ссылки для каждого чата
 
             if (!links.isEmpty()) { // Проверяем только чаты с ссылками
                 for (String link : links) {
+                    logger.info("Проверка ссылки: " + link);
                     linkToChatIdMap.put(link, chatId); // Сохраняем связь ссылка -> chatId
 
                     if (link.contains("github.com")) {
+                        logger.info("Проверка GitHub ссылки: " + link);
                         checkGitHubLink(link);
                     } else if (link.contains("stackoverflow.com")) {
+                        logger.info("Проверка StackOverflow ссылки: " + link);
                         checkStackOverflowLink(link);
                     }
                 }
@@ -56,13 +63,16 @@ public class LinkCheckerScheduler {
         String[] parts = link.split("/"); // Разбиваем ссылку на части
         String owner = parts[3];
         String repo = parts[4];
+        logger.info("Проверка GitHub репозитория: " + owner + "/" + repo);
         String lastUpdated = gitHubClient.getLastUpdatedDate(owner, repo);
         Instant lastUpdatedInstant = Instant.parse(lastUpdated);
 
         String cachedKey = "github:" + owner + "/" + repo;
         Instant cachedDate = lastUpdatedCache.getOrDefault(cachedKey, Instant.MIN);
-
+        logger.info("Последнее обновление: " + lastUpdatedInstant);
+        logger.info("Последнее обновление из кэша: " + cachedDate);
         if (lastUpdatedInstant.isAfter(cachedDate)) {
+
             lastUpdatedCache.put(cachedKey, lastUpdatedInstant);
             Long chatId = linkToChatIdMap.get(link); // Получаем chatId для ссылки
             if (chatId != null) {
@@ -97,11 +107,12 @@ public class LinkCheckerScheduler {
 
     private void sendUpdate(long chatId, String link, String description) {
         LinkUpdate update = new LinkUpdate(
-            1L, // ID ссылки (временно фиксировано)
+            chatId,
             link,
             description,
             List.of(chatId) // Отправляем уведомление только этому чату
         );
+        logger.info("Отправка уведомления: " + update);
         botClient.sendUpdate(update);
     }
 }
