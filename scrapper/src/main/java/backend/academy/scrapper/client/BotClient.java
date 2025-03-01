@@ -1,12 +1,12 @@
 package backend.academy.scrapper.client;
 
-import backend.academy.bot.model.LinkUpdate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import backend.academy.scrapper.model.LinkUpdate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 @Component
 public class BotClient {
@@ -15,7 +15,7 @@ public class BotClient {
 
     public BotClient() {
         this.restTemplate = new RestTemplate();
-        this.baseUrl = "http://localhost:8080"; // URL bot API
+        this.baseUrl = "http://localhost:8080";
     }
 
     // Отправка обновления
@@ -26,15 +26,10 @@ public class BotClient {
 
         HttpEntity<LinkUpdate> entity = new HttpEntity<>(update, headers);
 
-        ResponseEntity<Void> response = restTemplate.exchange(
-            url,
-            HttpMethod.POST,
-            entity,
-            Void.class
-        );
-
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Failed to send update");
+        try {
+            restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Ошибка отправки обновления: " + e.getResponseBodyAsString(), e);
         }
     }
 }

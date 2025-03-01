@@ -28,8 +28,8 @@ public class UpdateController {
         if (linkUpdate.tgChatIds() != null && !linkUpdate.tgChatIds().isEmpty()) {
             for (Long chatId : linkUpdate.tgChatIds()) {
                 String message = "Обновление ссылки:\n"
-                    + "URL: " + linkUpdate.url() + "\n"
-                    + "Описание: " + linkUpdate.description();
+                        + "URL: " + linkUpdate.url() + "\n"
+                        + "Описание: " + linkUpdate.description();
                 telegramClient.sendMessage(chatId, message);
             }
         } else {

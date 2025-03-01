@@ -1,23 +1,21 @@
 package backend.academy.bot.service;
 
-
 import backend.academy.bot.client.ScrapperClient;
 import backend.academy.bot.model.LinkResponse;
 import backend.academy.bot.model.ListLinksResponse;
-import org.springframework.stereotype.Service;
-
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
 @Service
 public class BotService {
     private final ScrapperClient scrapperClient;
     private final BotStateMachine botStateMachine;
-    private static final Pattern URL_PATTERN = Pattern.compile(
-        "^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$",
-        Pattern.CASE_INSENSITIVE
-    );
+    private static final Pattern URL_PATTERN =
+            Pattern.compile("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$", Pattern.CASE_INSENSITIVE);
 
     public BotService(ScrapperClient scrapperClient, BotStateMachine botStateMachine) {
         this.scrapperClient = scrapperClient;
@@ -52,10 +50,8 @@ public class BotService {
                 if (linksResponse.links().isEmpty()) {
                     return "У вас нет отслеживаемых ссылок.";
                 }
-                return "Ваши отслеживаемые ссылки:\n" +
-                    linksResponse.links().stream()
-                        .map(LinkResponse::url)
-                        .collect(Collectors.joining("\n"));
+                return "Ваши отслеживаемые ссылки:\n"
+                        + linksResponse.links().stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
             default:
                 return "Неизвестная команда. Используйте /help для просмотра доступных команд.";
         }
@@ -74,7 +70,7 @@ public class BotService {
                 // Получаем текущие ссылки для чата
                 ListLinksResponse linksResponse = scrapperClient.getLinks(chatId);
                 boolean isLinkAlreadyTracked = linksResponse.links().stream()
-                    .anyMatch(link -> link.url().equals(message));
+                        .anyMatch(link -> link.url().equals(message));
 
                 if (isLinkAlreadyTracked) {
                     botStateMachine.clearState(chatId);
@@ -82,9 +78,27 @@ public class BotService {
                 }
 
                 // Добавляем ссылку
-                scrapperClient.addLink(chatId, message, List.of(), List.of());
+                botStateMachine.setPendingLink(chatId, message);
+                botStateMachine.setState(chatId, "waiting_for_tags");
+                return "Введите тэги (через пробел). Если тэги не нужны, отправьте пустое сообщение.";
+            case "waiting_for_tags":
+                List<String> tags = Arrays.asList(message.trim().split("\\s+"));
+                botStateMachine.setPendingTags(chatId, tags.isEmpty() ? Collections.emptyList() : tags);
+                botStateMachine.setState(chatId, "waiting_for_filters");
+                return "Настройте фильтры (например, user:dummy type:comment). Если фильтры не нужны, отправьте пустое сообщение.";
+
+            case "waiting_for_filters":
+                List<String> filters = Arrays.asList(message.trim().split("\\s+"));
+                botStateMachine.setPendingFilters(chatId, filters.isEmpty() ? Collections.emptyList() : filters);
+
+                // Добавляем ссылку в репозиторий
+                String link = botStateMachine.getPendingLink(chatId);
+                List<String> pendingTags = botStateMachine.getPendingTags(chatId);
+                List<String> pendingFilters = botStateMachine.getPendingFilters(chatId);
+
+                scrapperClient.addLink(chatId, link, pendingTags, pendingFilters);
                 botStateMachine.clearState(chatId);
-                return "Ссылка добавлена в отслеживание.";
+                return "Ссылка успешно добавлена с тэгами: " + pendingTags + " и фильтрами: " + pendingFilters;
 
             case "waiting_for_untrack_link":
                 scrapperClient.removeLink(chatId, message);
@@ -95,6 +109,7 @@ public class BotService {
                 return "Неизвестное сообщение. Используйте /help для просмотра доступных команд.";
         }
     }
+
     public boolean isValidUrl(String url) {
         return URL_PATTERN.matcher(url).matches();
     }

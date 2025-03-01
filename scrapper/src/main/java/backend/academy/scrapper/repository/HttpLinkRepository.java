@@ -1,29 +1,35 @@
 package backend.academy.scrapper.repository;
 
-import org.springframework.stereotype.Repository;
+import backend.academy.scrapper.model.LinkResponse;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class HttpLinkRepository implements LinkRepository {
-    private final Map<Long, List<String>> chatLinks = new ConcurrentHashMap<>(); // Храним ссылки для каждого chatId
+    private final Map<Long, List<LinkResponse>> chatLinks =
+            new ConcurrentHashMap<>(); // Храним ссылки для каждого chatId
 
     @Override
-    public void addLink(long chatId, String link) {
-        chatLinks.computeIfAbsent(chatId, k -> new ArrayList<>()).add(link);
+    public void addLink(long chatId, String link, List<String> tags, List<String> filters) {
+        chatLinks
+                .computeIfAbsent(chatId, k -> new ArrayList<>())
+                .add(new LinkResponse(chatLinks.size() + 1, link, tags, filters));
     }
 
     @Override
     public void removeLink(long chatId, String link) {
-        chatLinks.getOrDefault(chatId, new ArrayList<>()).remove(link);
+        List<LinkResponse> links = chatLinks.getOrDefault(chatId, new ArrayList<>());
+
+        // Удаляем объект LinkResponse, у которого поле url совпадает с переданной строкой
+        links.removeIf(linkResponse -> linkResponse.url().equals(link));
     }
 
     @Override
-    public List<String> getLinks(long chatId) {
+    public List<LinkResponse> getLinks(long chatId) {
         return chatLinks.getOrDefault(chatId, Collections.emptyList());
     }
 

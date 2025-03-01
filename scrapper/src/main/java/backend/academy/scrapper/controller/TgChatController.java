@@ -1,12 +1,12 @@
 package backend.academy.scrapper.controller;
 
-import backend.academy.bot.model.AddLinkRequest;
-import backend.academy.bot.model.RemoveLinkRequest;
 import backend.academy.scrapper.exceptionhandler.ResourceNotFoundException;
+import backend.academy.scrapper.model.ApiErrorResponse;
 import backend.academy.scrapper.repository.HttpLinkRepository;
+import java.util.Arrays;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/tg-chat")
@@ -15,6 +15,17 @@ public class TgChatController {
 
     public TgChatController(HttpLinkRepository linkRepository) {
         this.linkRepository = linkRepository;
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class, ResourceNotFoundException.class})
+    public ResponseEntity<ApiErrorResponse> handleException(RuntimeException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST.toString(),
+                ex.getClass().getName(),
+                ex.getMessage(),
+                Arrays.asList(Arrays.toString(ex.getStackTrace())));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @PostMapping("/{id}")
@@ -37,7 +48,7 @@ public class TgChatController {
         }
 
         // Удаляем чат из репозитория
-        linkRepository.getAllChatIds().remove(id);
+        linkRepository.deleteChat(id);
 
         System.out.println("Чат удален: " + id);
         return ResponseEntity.ok().build();

@@ -1,10 +1,10 @@
 package backend.academy.scrapper.service;
 
 import backend.academy.scrapper.client.StackOverflowClient;
-import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.stereotype.Component;
 
 @Component
 public class StackOverflowLinkChecker implements LinkChecker {
@@ -19,7 +19,7 @@ public class StackOverflowLinkChecker implements LinkChecker {
     public boolean checkForUpdates(String link) {
         String[] parts = link.split("/");
         int questionId = Integer.parseInt(parts[4]);
-        String site = parts[2]; // Например, "ru.stackoverflow.com"
+        String site = parts[2];
 
         long lastActivityDate = stackOverflowClient.getLastActivityDate(questionId, site);
         Instant lastActivityInstant = Instant.ofEpochSecond(lastActivityDate);

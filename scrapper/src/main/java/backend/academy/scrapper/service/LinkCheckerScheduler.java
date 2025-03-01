@@ -1,48 +1,59 @@
 package backend.academy.scrapper.service;
 
 import backend.academy.scrapper.client.BotClient;
-import backend.academy.scrapper.client.GitHubClient;
-import backend.academy.scrapper.client.StackOverflowClient;
-import backend.academy.bot.model.LinkUpdate;
+import backend.academy.scrapper.model.LinkResponse;
+import backend.academy.scrapper.model.LinkUpdate;
 import backend.academy.scrapper.repository.LinkRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 @Component
 public class LinkCheckerScheduler {
     private final LinkRepository linkRepository;
     private final BotClient botClient;
-    private final Map<String, LinkChecker> linkCheckers; // Карта для хранения стратегий
-    private static final Logger logger = LoggerFactory.getLogger(LinkCheckerScheduler.class);
+    private Map<String, LinkChecker> linkCheckers; // Карта для хранения стратегий
 
-    public LinkCheckerScheduler(LinkRepository linkRepository, BotClient botClient,
-                                List<LinkChecker> linkCheckers) {
+    public LinkCheckerScheduler(LinkRepository linkRepository, BotClient botClient, List<LinkChecker> linkCheckers) {
         this.linkRepository = linkRepository;
         this.botClient = botClient;
 
         // Инициализация карты стратегий
-        this.linkCheckers = linkCheckers.stream()
-            .collect(Collectors.toMap(
-                checker -> checker.getClass().getSimpleName().replace("LinkChecker", "").toLowerCase(),
-                Function.identity()
-            ));
+        this.linkCheckers = (linkCheckers != null)
+                ? linkCheckers.stream()
+                        .collect(Collectors.toMap(
+                                checker -> checker.getClass()
+                                        .getSimpleName()
+                                        .replace("LinkChecker", "")
+                                        .toLowerCase(),
+                                Function.identity()))
+                : Collections.emptyMap();
+    }
+
+    public void setLinkCheckers(List<LinkChecker> linkCheckers) {
+        this.linkCheckers = (linkCheckers != null)
+                ? linkCheckers.stream()
+                        .collect(Collectors.toMap(
+                                checker -> checker.getClass()
+                                        .getSimpleName()
+                                        .replace("LinkChecker", "")
+                                        .toLowerCase(),
+                                Function.identity()))
+                : Collections.emptyMap();
     }
 
     @Scheduled(fixedRate = 30000) // Каждые 30 секунд
     public void checkLinks() {
         List<Long> chatIds = linkRepository.getAllChatIds(); // Получаем все chatId
         for (long chatId : chatIds) {
-            List<String> links = linkRepository.getLinks(chatId); // Получаем ссылки для каждого чата
+            List<LinkResponse> links = linkRepository.getLinks(chatId); // Получаем ссылки для каждого чата
+
             if (!links.isEmpty()) { // Проверяем только чаты с ссылками
-                for (String link : links) {
+                for (String link : links.stream().map(LinkResponse::url).toList()) {
                     processLink(chatId, link);
                 }
             }
@@ -71,13 +82,8 @@ public class LinkCheckerScheduler {
 
     private void sendUpdate(long chatId, String link, String description) {
         LinkUpdate update = new LinkUpdate(
-            chatId,
-            link,
-            description,
-            List.of(chatId) // Отправляем уведомление только этому чату
-        );
-        logger.info("Отправка уведомления: " + update);
+                chatId, link, description, List.of(chatId) // Отправляем уведомление только этому чату
+                );
         botClient.sendUpdate(update);
     }
 }
-

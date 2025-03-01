@@ -1,12 +1,18 @@
 package backend.academy.scrapper.repository;
 
+import backend.academy.scrapper.model.LinkResponse;
 import java.util.List;
 
 public interface LinkRepository {
-    void addLink(long chatId, String link);
+    void addLink(long chatId, String link, List<String> tags, List<String> filters);
+
     void removeLink(long chatId, String link);
-    List<String> getLinks(long chatId);
+
+    List<LinkResponse> getLinks(long chatId);
+
     void registerChat(long chatId);
+
     void deleteChat(long chatId);
+
     List<Long> getAllChatIds();
 }

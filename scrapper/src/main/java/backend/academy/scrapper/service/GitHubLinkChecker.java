@@ -1,10 +1,10 @@
 package backend.academy.scrapper.service;
 
 import backend.academy.scrapper.client.GitHubClient;
-import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.stereotype.Component;
 
 @Component
 public class GitHubLinkChecker implements LinkChecker {

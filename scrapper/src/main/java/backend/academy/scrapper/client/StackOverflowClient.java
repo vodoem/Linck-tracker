@@ -1,12 +1,12 @@
 package backend.academy.scrapper.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
@@ -22,9 +22,9 @@ public class StackOverflowClient {
     public long getLastActivityDate(int questionId, String site) {
         // Формируем URL с параметрами запроса
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/questions/" + questionId)
-            .queryParam("site", site)
-            .queryParam("filter", "!9_bDDxJY5") // Стандартный фильтр
-            .toUriString();
+                .queryParam("site", site)
+                .queryParam("filter", "!9_bDDxJY5") // Стандартный фильтр
+                .toUriString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
@@ -32,12 +32,7 @@ public class StackOverflowClient {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         // Выполняем GET-запрос
-        ResponseEntity<JsonNode> response = restTemplate.exchange(
-            url,
-            HttpMethod.GET,
-            entity,
-            JsonNode.class
-        );
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
 
         // Проверяем ответ API
         JsonNode body = response.getBody();
