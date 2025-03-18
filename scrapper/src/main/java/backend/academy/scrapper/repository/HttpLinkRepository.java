@@ -1,14 +1,13 @@
 package backend.academy.scrapper.repository;
 
-import backend.academy.scrapper.model.LinkResponse;
+import backend.academy.model.LinkResponse;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.stereotype.Repository;
 
-@Repository
+
 public class HttpLinkRepository implements LinkRepository {
     private final Map<Long, List<LinkResponse>> chatLinks =
             new ConcurrentHashMap<>(); // Храним ссылки для каждого chatId
@@ -29,7 +28,7 @@ public class HttpLinkRepository implements LinkRepository {
     }
 
     @Override
-    public List<LinkResponse> getLinks(long chatId) {
+    public List<LinkResponse> getLinks(long chatId, int offset, int limit) {
         return chatLinks.getOrDefault(chatId, Collections.emptyList());
     }
 

@@ -1,14 +1,15 @@
 package backend.academy.scrapper.service;
 
 import backend.academy.scrapper.client.BotClient;
-import backend.academy.scrapper.model.LinkResponse;
-import backend.academy.scrapper.model.LinkUpdate;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.LinkUpdate;
 import backend.academy.scrapper.repository.LinkRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,8 @@ public class LinkCheckerScheduler {
     private final LinkRepository linkRepository;
     private final BotClient botClient;
     private Map<String, LinkChecker> linkCheckers; // Карта для хранения стратегий
+    @Value("${app.db.batch-size}")
+    private int batchSize;
 
     public LinkCheckerScheduler(LinkRepository linkRepository, BotClient botClient, List<LinkChecker> linkCheckers) {
         this.linkRepository = linkRepository;
@@ -46,16 +49,23 @@ public class LinkCheckerScheduler {
                 : Collections.emptyMap();
     }
 
-    @Scheduled(fixedRate = 30000) // Каждые 30 секунд
+    @Scheduled(fixedDelayString = "${app.scheduler.delay-ms}") // Каждые 30 секунд
     public void checkLinks() {
         List<Long> chatIds = linkRepository.getAllChatIds(); // Получаем все chatId
         for (long chatId : chatIds) {
-            List<LinkResponse> links = linkRepository.getLinks(chatId); // Получаем ссылки для каждого чата
-
-            if (!links.isEmpty()) { // Проверяем только чаты с ссылками
-                for (String link : links.stream().map(LinkResponse::url).toList()) {
-                    processLink(chatId, link);
+            int offset = 0;
+            int limit = batchSize;
+            while (true) {
+                List<LinkResponse> links = linkRepository.getLinks(chatId, offset, limit);
+                if (links.isEmpty()) {
+                    break; // Если больше нет ссылок, завершаем цикл
                 }
+                else { // Проверяем только чаты с ссылками
+                    for (String link : links.stream().map(LinkResponse::url).toList()) {
+                        processLink(chatId, link);
+                    }
+                }
+                offset += limit; // Переходим к следующему пакету
             }
         }
     }

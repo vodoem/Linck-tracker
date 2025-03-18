@@ -1,3 +1,3 @@
-package backend.academy.scrapper.model;
+package backend.academy.model;
 
 public record RemoveLinkRequest(String link) {}

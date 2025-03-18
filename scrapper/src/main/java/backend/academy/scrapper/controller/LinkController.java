@@ -1,11 +1,13 @@
 package backend.academy.scrapper.controller;
 
-import backend.academy.scrapper.model.AddLinkRequest;
-import backend.academy.scrapper.model.LinkResponse;
-import backend.academy.scrapper.model.ListLinksResponse;
-import backend.academy.scrapper.model.RemoveLinkRequest;
-import backend.academy.scrapper.repository.HttpLinkRepository;
+import backend.academy.model.AddLinkRequest;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.ListLinksResponse;
+import backend.academy.model.RemoveLinkRequest;
+import java.util.ArrayList;
 import java.util.List;
+import backend.academy.scrapper.repository.LinkRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,9 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/links")
 public class LinkController {
-    private final HttpLinkRepository linkRepository;
+    private final LinkRepository linkRepository;
+    @Value("${app.db.batch-size}")
+    private int batchSize;
 
-    public LinkController(HttpLinkRepository linkRepository) {
+    public LinkController(LinkRepository linkRepository) {
         this.linkRepository = linkRepository;
     }
 
@@ -28,11 +32,29 @@ public class LinkController {
     public ResponseEntity<ListLinksResponse> getLinks(@RequestHeader("Tg-Chat-Id") long chatId) {
         System.out.println("Получение ссылок для чата: " + chatId);
 
-        // Получаем список ссылок из репозитория
-        List<LinkResponse> links = linkRepository.getLinks(chatId);
+        // Параметры пагинации
+        int offset = 0;
+        int limit = batchSize; // Размер пакета из конфигурации
+        List<LinkResponse> allLinks = new ArrayList<>();
+
+        while (true) {
+            // Получаем пакет ссылок
+            List<LinkResponse> links = linkRepository.getLinks(chatId, offset, limit);
+
+            // Если больше нет данных, завершаем цикл
+            if (links.isEmpty()) {
+                break;
+            }
+
+            // Добавляем загруженные ссылки в общий список
+            allLinks.addAll(links);
+
+            // Переходим к следующему пакету
+            offset += limit;
+        }
 
         // Создаем объект ListLinksResponse с данными
-        ListLinksResponse listLinksResponse = new ListLinksResponse(links, links.size());
+        ListLinksResponse listLinksResponse = new ListLinksResponse(allLinks, allLinks.size());
 
         // Возвращаем ответ
         return ResponseEntity.ok(listLinksResponse);

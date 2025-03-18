@@ -1,7 +1,7 @@
 package backend.academy.bot.controller;
 
 import backend.academy.bot.client.TelegramClient;
-import backend.academy.bot.model.LinkUpdate;
+import backend.academy.model.LinkUpdate;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

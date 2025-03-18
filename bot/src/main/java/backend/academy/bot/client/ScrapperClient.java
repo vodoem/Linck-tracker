@@ -1,9 +1,6 @@
 package backend.academy.bot.client;
 
-import backend.academy.bot.model.AddLinkRequest;
-import backend.academy.bot.model.LinkResponse;
-import backend.academy.bot.model.ListLinksResponse;
-import backend.academy.bot.model.RemoveLinkRequest;
+import backend.academy.model.*;
 import java.util.List;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;

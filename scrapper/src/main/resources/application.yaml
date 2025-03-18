@@ -1,18 +1,36 @@
 app:
+  access-type: SQL # или ORM
   github-token: ${GITHUB_TOKEN} # env variable
   stackoverflow:
     key: ${SO_TOKEN_KEY}
     access-token: ${SO_ACCESS_TOKEN}
+  scheduler:
+    delay-ms: 10000
+  db:
+    batch-size: 100
 
 spring:
   application:
     name: Scrapper
+  datasource:
+    url: jdbc:postgresql://localhost:5433/scrapper
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    jpa:
+      hibernate:
+        ddl-auto: update
+      properties:
+        hibernate:
+          jdbc:
+            lob:
+              non_contextual_creation: true
   liquibase:
     enabled: false
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
+#    change-log: ./migrations/master.xml
+#    url: ${spring.datasource.url}
+#    user: ${spring.datasource.username}
+#    password: ${spring.datasource.password}
 
 server:
   port: 8081

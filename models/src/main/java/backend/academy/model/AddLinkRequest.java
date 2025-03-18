@@ -1,4 +1,4 @@
-package backend.academy.scrapper.model;
+package backend.academy.model;
 
 import java.util.List;
 

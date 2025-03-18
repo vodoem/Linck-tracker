@@ -1,6 +1,6 @@
 package backend.academy.scrapper.client;
 
-import backend.academy.scrapper.model.LinkUpdate;
+import backend.academy.model.LinkUpdate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
