@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import backend.academy.bot.client.ScrapperClient;
-import backend.academy.bot.model.LinkResponse;
-import backend.academy.bot.model.ListLinksResponse;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.ListLinksResponse;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

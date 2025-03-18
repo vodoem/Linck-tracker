@@ -1,8 +1,8 @@
 package backend.academy.bot.service;
 
 import backend.academy.bot.client.ScrapperClient;
-import backend.academy.bot.model.LinkResponse;
-import backend.academy.bot.model.ListLinksResponse;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.ListLinksResponse;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -80,16 +80,24 @@ public class BotService {
                 // Добавляем ссылку
                 botStateMachine.setPendingLink(chatId, message);
                 botStateMachine.setState(chatId, "waiting_for_tags");
-                return "Введите тэги (через пробел). Если тэги не нужны, отправьте пустое сообщение.";
+                return "Введите тэги (через пробел). Если тэги не нужны, отправьте -";
             case "waiting_for_tags":
                 List<String> tags = Arrays.asList(message.trim().split("\\s+"));
-                botStateMachine.setPendingTags(chatId, tags.isEmpty() ? Collections.emptyList() : tags);
+                if (tags.size() == 1 && "-".equals(tags.get(0))) {
+                    botStateMachine.setPendingTags(chatId, Collections.emptyList());
+                } else {
+                    botStateMachine.setPendingTags(chatId, tags);
+                }
                 botStateMachine.setState(chatId, "waiting_for_filters");
-                return "Настройте фильтры (например, user:dummy type:comment). Если фильтры не нужны, отправьте пустое сообщение.";
+                return "Настройте фильтры (например, user:dummy type:comment). Если фильтры не нужны, отправьте -";
 
             case "waiting_for_filters":
                 List<String> filters = Arrays.asList(message.trim().split("\\s+"));
-                botStateMachine.setPendingFilters(chatId, filters.isEmpty() ? Collections.emptyList() : filters);
+                if (filters.size() == 1 && "-".equals(filters.get(0))) {
+                    botStateMachine.setPendingFilters(chatId, Collections.emptyList());
+                } else {
+                    botStateMachine.setPendingFilters(chatId, filters);
+                }
 
                 // Добавляем ссылку в репозиторий
                 String link = botStateMachine.getPendingLink(chatId);
@@ -99,7 +107,6 @@ public class BotService {
                 scrapperClient.addLink(chatId, link, pendingTags, pendingFilters);
                 botStateMachine.clearState(chatId);
                 return "Ссылка успешно добавлена с тэгами: " + pendingTags + " и фильтрами: " + pendingFilters;
-
             case "waiting_for_untrack_link":
                 scrapperClient.removeLink(chatId, message);
                 botStateMachine.clearState(chatId);

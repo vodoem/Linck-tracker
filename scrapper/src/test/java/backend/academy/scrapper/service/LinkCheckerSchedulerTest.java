@@ -10,8 +10,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import backend.academy.scrapper.client.BotClient;
-import backend.academy.scrapper.model.LinkResponse;
-import backend.academy.scrapper.model.LinkUpdate;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.LinkUpdate;
 import backend.academy.scrapper.repository.LinkRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

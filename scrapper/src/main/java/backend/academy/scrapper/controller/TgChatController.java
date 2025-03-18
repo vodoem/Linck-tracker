@@ -1,9 +1,9 @@
 package backend.academy.scrapper.controller;
 
 import backend.academy.scrapper.exceptionhandler.ResourceNotFoundException;
-import backend.academy.scrapper.model.ApiErrorResponse;
-import backend.academy.scrapper.repository.HttpLinkRepository;
+import backend.academy.model.ApiErrorResponse;
 import java.util.Arrays;
+import backend.academy.scrapper.repository.LinkRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/tg-chat")
 public class TgChatController {
-    private final HttpLinkRepository linkRepository;
+    private final LinkRepository linkRepository;
 
-    public TgChatController(HttpLinkRepository linkRepository) {
+    public TgChatController(LinkRepository linkRepository) {
         this.linkRepository = linkRepository;
     }
 
