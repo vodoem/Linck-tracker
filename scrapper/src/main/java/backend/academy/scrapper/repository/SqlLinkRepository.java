@@ -129,4 +129,74 @@ public class SqlLinkRepository implements LinkRepository {
     public List<Long> getAllChatIds() {
         return jdbcTemplate.queryForList("SELECT id FROM tg_chat", Long.class);
     }
+
+    @Override
+    public void addTags(long chatId, String url, List<String> tags) {
+        int linkId = jdbcTemplate.queryForObject(
+                "SELECT id FROM tracked_link WHERE url = ? AND chat_id = ?",
+                Integer.class,
+                url, chatId
+        );
+
+        if (linkId == 0) {
+            throw new IllegalArgumentException("Ссылка не найдена.");
+        }
+
+        List<Object[]> tagArgs = tags.stream()
+                .map(tag -> new Object[]{linkId, tag})
+                .collect(Collectors.toList());
+
+        jdbcTemplate.batchUpdate(
+                "INSERT INTO tag (link_id, name) VALUES (?, ?)",
+                tagArgs
+        );
+    }
+
+    @Override
+    public void removeTag(long chatId, String url, String tagName) {
+        jdbcTemplate.update(
+                "DELETE FROM tag WHERE link_id IN (SELECT id FROM tracked_link WHERE url = ? AND chat_id = ?) AND name = ?",
+                url, chatId, tagName
+        );
+    }
+
+    @Override
+    public List<String> getTagsForLink(long chatId, String url) {
+        return jdbcTemplate.queryForList(
+                "SELECT t.name FROM tag t JOIN tracked_link tl ON t.link_id = tl.id WHERE tl.url = ? AND tl.chat_id = ?",
+                String.class,
+                url, chatId
+        );
+    }
+
+    @Override
+    public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
+        String sql = """
+        SELECT tl.id, tl.url,
+               ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) AS tags,
+               ARRAY_AGG(DISTINCT f.value) FILTER (WHERE f.value IS NOT NULL) AS filters
+        FROM tracked_link tl
+        JOIN tag t ON tl.id = t.link_id
+        LEFT JOIN filter f ON tl.id = f.link_id
+        WHERE tl.chat_id = ? AND t.name = ?
+        GROUP BY tl.id, tl.url
+    """;
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            int id = rs.getInt("id");
+            String url = rs.getString("url");
+            Array tagsArray = rs.getArray("tags");
+            Array filtersArray = rs.getArray("filters");
+
+            List<String> tags = tagsArray != null
+                    ? Arrays.asList((String[]) tagsArray.getArray())
+                    : Collections.emptyList();
+
+            List<String> filters = filtersArray != null
+                    ? Arrays.asList((String[]) filtersArray.getArray())
+                    : Collections.emptyList();
+
+            return new LinkResponse(id, url, tags, filters);
+        }, chatId, tagName);
+    }
 }

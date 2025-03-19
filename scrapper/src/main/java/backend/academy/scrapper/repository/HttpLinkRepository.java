@@ -46,4 +46,24 @@ public class HttpLinkRepository implements LinkRepository {
     public List<Long> getAllChatIds() {
         return new ArrayList<>(chatLinks.keySet());
     }
+
+    @Override
+    public void addTags(long chatId, String url, List<String> tags) {
+
+    }
+
+    @Override
+    public void removeTag(long chatId, String url, String tagName) {
+
+    }
+
+    @Override
+    public List<String> getTagsForLink(long chatId, String url) {
+        return List.of();
+    }
+
+    @Override
+    public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
+        return List.of();
+    }
 }

@@ -15,4 +15,12 @@ public interface LinkRepository {
     void deleteChat(long chatId);
 
     List<Long> getAllChatIds();
+
+    void addTags(long chatId, String url, List<String> tags);
+
+    void removeTag(long chatId, String url, String tagName);
+
+    List<String> getTagsForLink(long chatId, String url);
+
+    List<LinkResponse> getLinksByTag(long chatId, String tagName);
 }

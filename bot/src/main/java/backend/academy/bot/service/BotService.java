@@ -38,6 +38,10 @@ public class BotService {
                     /track - добавить ссылку для отслеживания
                     /untrack - удалить ссылку из отслеживания
                     /list - показать список отслеживаемых ссылок
+                    /addtags <url> <tag1> <tag2> ... — добавить теги к ссылке.
+                    /removetag <url> <tag> — удалить тег из ссылки.
+                    /listtags <url> — показать все теги для ссылки.
+                    /filterbytag <tag> — показать только ссылки с указанным тегом.
                     """;
             case "/track":
                 botStateMachine.setState(chatId, "waiting_for_link");
@@ -52,6 +56,18 @@ public class BotService {
                 }
                 return "Ваши отслеживаемые ссылки:\n"
                         + linksResponse.links().stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
+            case "/addtags":
+                botStateMachine.setState(chatId, "waiting_for_addtags");
+                return "Введите URL и теги через пробел.";
+            case "/removetag":
+                botStateMachine.setState(chatId, "waiting_for_removetag");
+                return "Введите URL и имя тега через пробел.";
+            case "/listtags":
+                botStateMachine.setState(chatId, "waiting_for_listtags");
+                return "Введите URL для просмотра тегов.";
+            case "/filterbytag":
+                botStateMachine.setState(chatId, "waiting_for_filterbytag");
+                return "Введите имя тега для фильтрации ссылок.";
             default:
                 return "Неизвестная команда. Используйте /help для просмотра доступных команд.";
         }
@@ -111,6 +127,37 @@ public class BotService {
                 scrapperClient.removeLink(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Ссылка удалена из отслеживания.";
+
+            case "waiting_for_addtags":
+                String[] parts = message.split(" ");
+                String url = parts[0];
+                List<String> tagsForUrl = Arrays.asList(Arrays.copyOfRange(parts, 1, parts.length));
+                scrapperClient.addTags(chatId, url, tagsForUrl);
+                botStateMachine.clearState(chatId);
+                return "Теги успешно добавлены.";
+
+            case "waiting_for_removetag":
+                String[] removeParts = message.split(" ");
+                String removeUrl = removeParts[0];
+                String tagName = removeParts[1];
+                scrapperClient.removeTag(chatId, removeUrl, tagName);
+                botStateMachine.clearState(chatId);
+                return "Тег успешно удален.";
+
+            case "waiting_for_listtags":
+                List<String> tagsList = scrapperClient.getTagsForLink(chatId, message);
+                botStateMachine.clearState(chatId);
+                return "Теги для ссылки: " + String.join(", ", tagsList);
+
+            case "waiting_for_filterbytag":
+                List<LinkResponse> filteredLinks = scrapperClient.getLinksByTag(chatId, message);
+                botStateMachine.clearState(chatId);
+                return "Ссылки с тегом '" + message + "':\n" +
+                    filteredLinks.stream()
+                        .map(LinkResponse::url)
+                        .collect(Collectors.joining("\n"));
+
+
 
             default:
                 return "Неизвестное сообщение. Используйте /help для просмотра доступных команд.";

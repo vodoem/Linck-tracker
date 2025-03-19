@@ -139,4 +139,75 @@ public class OrmLinkRepository implements LinkRepository {
         return em.createQuery("SELECT tc.id FROM TgChat tc", Long.class)
             .getResultList();
     }
+
+    @Override
+    @Transactional
+    public void addTags(long chatId, String url, List<String> tags) {
+        TrackedLink link = em.createQuery(
+                        "SELECT tl FROM TrackedLink tl WHERE tl.chat.id = :chatId AND tl.url = :url", TrackedLink.class)
+                .setParameter("chatId", chatId)
+                .setParameter("url", url)
+                .getSingleResult();
+
+        tags.forEach(tagName -> {
+            Tag tag = new Tag();
+            tag.setName(tagName);
+            tag.setLink(link);
+            link.getTags().add(tag);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void removeTag(long chatId, String url, String tagName) {
+        em.createQuery(
+                        "DELETE FROM Tag t WHERE t.link.chat.id = :chatId AND t.link.url = :url AND t.name = :tagName")
+                .setParameter("chatId", chatId)
+                .setParameter("url", url)
+                .setParameter("tagName", tagName)
+                .executeUpdate();
+    }
+
+    @Override
+    public List<String> getTagsForLink(long chatId, String url) {
+        return em.createQuery(
+                        "SELECT t.name FROM Tag t WHERE t.link.chat.id = :chatId AND t.link.url = :url", String.class)
+                .setParameter("chatId", chatId)
+                .setParameter("url", url)
+                .getResultList();
+    }
+
+    @Override
+    public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
+        String jpql = """
+        SELECT DISTINCT tl FROM TrackedLink tl
+        JOIN tl.tags t
+        WHERE tl.chat.id = :chatId AND t.name = :tagName
+    """;
+
+        TypedQuery<TrackedLink> query = em.createQuery(jpql, TrackedLink.class);
+        query.setParameter("chatId", chatId);
+        query.setParameter("tagName", tagName);
+
+        List<TrackedLink> trackedLinks = query.getResultList();
+
+        return trackedLinks.stream()
+                .map(link -> new LinkResponse(
+                        link.getId(),
+                        link.getUrl(),
+                        link.getTags() != null
+                                ? link.getTags().stream()
+                                .map(Tag::getName)
+                                .distinct()
+                                .toList()
+                                : Collections.emptyList(),
+                        link.getFilters() != null
+                                ? link.getFilters().stream()
+                                .map(Filter::getValue)
+                                .distinct()
+                                .toList()
+                                : Collections.emptyList()
+                ))
+                .toList();
+    }
 }
