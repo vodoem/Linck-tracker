@@ -10,5 +10,5 @@ public record ScrapperConfig(@NotEmpty String githubToken, StackOverflowCredenti
                              SchedulerConfig scheduler) {
     public record StackOverflowCredentials(@NotEmpty String key, @NotEmpty String accessToken) {}
     public record DbConfig(int batchSize) {}
-    public record SchedulerConfig(long delayMs) {}
+    public record SchedulerConfig(long delayMs, int numThreads) {}
 }

@@ -4,10 +4,11 @@ app:
   stackoverflow:
     key: ${SO_TOKEN_KEY}
     access-token: ${SO_ACCESS_TOKEN}
-  scheduler:
-    delay-ms: 10000
   db:
-    batch-size: 100
+      batch-size: 1000 # Размер батча
+  scheduler:
+    delay-ms: 30000 # Интервал между проверками (30 секунд)
+    num-threads: 4 # Количество потоков
 
 spring:
   application:
