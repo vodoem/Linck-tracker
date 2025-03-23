@@ -4,7 +4,7 @@
     <parent>
         <groupId>backend.academy</groupId>
         <artifactId>root</artifactId>
-        <version>1.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>models</artifactId>
