@@ -1,12 +1,12 @@
 package backend.academy.scrapper.service;
 
 import backend.academy.scrapper.client.StackOverflowClient;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -51,18 +51,16 @@ public class StackOverflowLinkChecker implements LinkChecker {
 
         String userName = answer.get("owner").get("display_name").asText();
         long creationDate = answer.get("creation_date").asLong();
-        String bodyPreview = answer.has("body") ? truncatePreview(answer.get("body").asText(), 200) : "Нет описания";
+        String bodyPreview =
+                answer.has("body") ? truncatePreview(answer.get("body").asText(), 200) : "Нет описания";
 
-        String formattedDate = Instant.ofEpochSecond(creationDate).atZone(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        String formattedDate = Instant.ofEpochSecond(creationDate)
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
 
         return String.format(
-            "Новый ответ на вопрос:\n" +
-                "Автор: %s\n" +
-                "Дата создания: %s\n" +
-                "Превью ответа: %s",
-            userName, formattedDate, bodyPreview
-        );
+                "Новый ответ на вопрос:%n" + "Автор: %s%n" + "Дата создания: %s%n" + "Превью ответа: %s",
+                userName, formattedDate, bodyPreview);
     }
 
     private String truncatePreview(String text, int maxLength) {

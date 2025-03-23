@@ -152,12 +152,8 @@ public class BotService {
             case "waiting_for_filterbytag":
                 List<LinkResponse> filteredLinks = scrapperClient.getLinksByTag(chatId, message);
                 botStateMachine.clearState(chatId);
-                return "Ссылки с тегом '" + message + "':\n" +
-                    filteredLinks.stream()
-                        .map(LinkResponse::url)
-                        .collect(Collectors.joining("\n"));
-
-
+                return "Ссылки с тегом '" + message + "':\n"
+                        + filteredLinks.stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
 
             default:
                 return "Неизвестное сообщение. Используйте /help для просмотра доступных команд.";

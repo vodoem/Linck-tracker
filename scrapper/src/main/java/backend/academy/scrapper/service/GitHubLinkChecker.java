@@ -1,11 +1,10 @@
 package backend.academy.scrapper.service;
 
 import backend.academy.scrapper.client.GitHubClient;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -58,15 +57,12 @@ public class GitHubLinkChecker implements LinkChecker {
         String title = issue.get("title").asText();
         String userName = issue.get("user").get("login").asText();
         String createdAt = issue.get("created_at").asText();
-        String bodyPreview = issue.has("body") ? truncatePreview(issue.get("body").asText(), 200) : "Нет описания";
+        String bodyPreview =
+                issue.has("body") ? truncatePreview(issue.get("body").asText(), 200) : "Нет описания";
 
         return String.format(
-            "Новый PR/Issue: %s\n" +
-                "Автор: %s\n" +
-                "Дата создания: %s\n" +
-                "Превью описания: %s",
-            title, userName, createdAt, bodyPreview
-        );
+                "Новый PR/Issue: %s%n" + "Автор: %s%n" + "Дата создания: %s%n" + "Превью описания: %s",
+                title, userName, createdAt, bodyPreview);
     }
 
     private String truncatePreview(String text, int maxLength) {

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 public class HttpLinkRepository implements LinkRepository {
     private final Map<Long, List<LinkResponse>> chatLinks =
             new ConcurrentHashMap<>(); // Храним ссылки для каждого chatId
@@ -48,14 +47,10 @@ public class HttpLinkRepository implements LinkRepository {
     }
 
     @Override
-    public void addTags(long chatId, String url, List<String> tags) {
-
-    }
+    public void addTags(long chatId, String url, List<String> tags) {}
 
     @Override
-    public void removeTag(long chatId, String url, String tagName) {
-
-    }
+    public void removeTag(long chatId, String url, String tagName) {}
 
     @Override
     public List<String> getTagsForLink(long chatId, String url) {

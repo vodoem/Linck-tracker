@@ -1,9 +1,9 @@
 package backend.academy.scrapper.controller;
 
-import backend.academy.scrapper.exceptionhandler.ResourceNotFoundException;
 import backend.academy.model.ApiErrorResponse;
-import java.util.Arrays;
+import backend.academy.scrapper.exceptionhandler.ResourceNotFoundException;
 import backend.academy.scrapper.repository.LinkRepository;
+import java.util.Arrays;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

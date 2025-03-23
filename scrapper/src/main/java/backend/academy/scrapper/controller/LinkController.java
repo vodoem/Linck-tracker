@@ -4,9 +4,9 @@ import backend.academy.model.AddLinkRequest;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import backend.academy.model.RemoveLinkRequest;
+import backend.academy.scrapper.repository.LinkRepository;
 import java.util.ArrayList;
 import java.util.List;
-import backend.academy.scrapper.repository.LinkRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/links")
 public class LinkController {
     private final LinkRepository linkRepository;
+
     @Value("${app.db.batch-size}")
     private int batchSize;
 

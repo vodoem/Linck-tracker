@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-
 public class OrmLinkRepository implements LinkRepository {
     private final EntityManager em;
 
@@ -20,17 +19,16 @@ public class OrmLinkRepository implements LinkRepository {
         this.em = em;
     }
 
-
     @Override
     @Transactional
     public void addLink(long chatId, String url, List<String> tags, List<String> filters) {
         TrackedLink link = em.createQuery(
-                "SELECT tl FROM TrackedLink tl WHERE tl.chat.id = :chatId AND tl.url = :url", TrackedLink.class)
-            .setParameter("chatId", chatId)
-            .setParameter("url", url)
-            .getResultStream()
-            .findFirst()
-            .orElse(null);
+                        "SELECT tl FROM TrackedLink tl WHERE tl.chat.id = :chatId AND tl.url = :url", TrackedLink.class)
+                .setParameter("chatId", chatId)
+                .setParameter("url", url)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
 
         if (link != null) {
             throw new IllegalArgumentException("Ссылка уже отслеживается.");
@@ -70,11 +68,11 @@ public class OrmLinkRepository implements LinkRepository {
     @Transactional
     public void removeLink(long chatId, String url) {
         TrackedLink link = em.createQuery(
-                "SELECT tl FROM TrackedLink tl " +
-                    "WHERE tl.chat.id = :chatId AND tl.url = :url", TrackedLink.class)
-            .setParameter("chatId", chatId)
-            .setParameter("url", url)
-            .getSingleResult();
+                        "SELECT tl FROM TrackedLink tl " + "WHERE tl.chat.id = :chatId AND tl.url = :url",
+                        TrackedLink.class)
+                .setParameter("chatId", chatId)
+                .setParameter("url", url)
+                .getSingleResult();
 
         em.remove(link);
     }
@@ -82,7 +80,8 @@ public class OrmLinkRepository implements LinkRepository {
     @Override
     public List<LinkResponse> getLinks(long chatId, int offset, int limit) {
         // JPQL запрос для загрузки TrackedLink с тегами и фильтрами
-        String jpql = """
+        String jpql =
+                """
             SELECT DISTINCT tl FROM TrackedLink tl
             LEFT JOIN FETCH tl.tags t
             LEFT JOIN FETCH tl.filters f
@@ -92,29 +91,12 @@ public class OrmLinkRepository implements LinkRepository {
         TypedQuery<TrackedLink> query = em.createQuery(jpql, TrackedLink.class);
         query.setParameter("chatId", chatId);
         query.setFirstResult(offset); // Начальная позиция
-        query.setMaxResults(limit);  // Количество записей
+        query.setMaxResults(limit); // Количество записей
 
         List<TrackedLink> trackedLinks = query.getResultList();
 
         // Преобразование TrackedLink в LinkResponse
-        return trackedLinks.stream()
-            .map(link -> new LinkResponse(
-                link.getId(),
-                link.getUrl(),
-                link.getTags() != null
-                    ? link.getTags().stream()
-                    .map(Tag::getName)
-                    .distinct()
-                    .toList()
-                    : Collections.emptyList(),
-                link.getFilters() != null
-                    ? link.getFilters().stream()
-                    .map(Filter::getValue)
-                    .distinct()
-                    .toList()
-                    : Collections.emptyList()
-            ))
-            .toList();
+        return mapToLinkResponses(trackedLinks);
     }
 
     @Override
@@ -136,8 +118,7 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     public List<Long> getAllChatIds() {
-        return em.createQuery("SELECT tc.id FROM TgChat tc", Long.class)
-            .getResultList();
+        return em.createQuery("SELECT tc.id FROM TgChat tc", Long.class).getResultList();
     }
 
     @Override
@@ -160,8 +141,7 @@ public class OrmLinkRepository implements LinkRepository {
     @Override
     @Transactional
     public void removeTag(long chatId, String url, String tagName) {
-        em.createQuery(
-                        "DELETE FROM Tag t WHERE t.link.chat.id = :chatId AND t.link.url = :url AND t.name = :tagName")
+        em.createQuery("DELETE FROM Tag t WHERE t.link.chat.id = :chatId AND t.link.url = :url AND t.name = :tagName")
                 .setParameter("chatId", chatId)
                 .setParameter("url", url)
                 .setParameter("tagName", tagName)
@@ -179,7 +159,8 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
-        String jpql = """
+        String jpql =
+                """
         SELECT DISTINCT tl FROM TrackedLink tl
         JOIN tl.tags t
         WHERE tl.chat.id = :chatId AND t.name = :tagName
@@ -191,23 +172,26 @@ public class OrmLinkRepository implements LinkRepository {
 
         List<TrackedLink> trackedLinks = query.getResultList();
 
+        return mapToLinkResponses(trackedLinks);
+    }
+
+    private List<LinkResponse> mapToLinkResponses(List<TrackedLink> trackedLinks) {
         return trackedLinks.stream()
                 .map(link -> new LinkResponse(
                         link.getId(),
                         link.getUrl(),
                         link.getTags() != null
                                 ? link.getTags().stream()
-                                .map(Tag::getName)
-                                .distinct()
-                                .toList()
+                                        .map(Tag::getName)
+                                        .distinct()
+                                        .toList()
                                 : Collections.emptyList(),
                         link.getFilters() != null
                                 ? link.getFilters().stream()
-                                .map(Filter::getValue)
-                                .distinct()
-                                .toList()
-                                : Collections.emptyList()
-                ))
+                                        .map(Filter::getValue)
+                                        .distinct()
+                                        .toList()
+                                : Collections.emptyList()))
                 .toList();
     }
 }

@@ -1,13 +1,11 @@
 package backend.academy.scrapper.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -28,11 +26,11 @@ public class StackOverflowClient {
     // Получение даты последней активности
     public long getLastActivityDate(int questionId, String site) {
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/questions/" + questionId)
-            .queryParam("site", site)
-            .queryParam("filter", "!9_bDDxJY5") // Стандартный фильтр
-            .queryParam("key", apiKey)
-            .queryParam("access_token", accessToken)
-            .toUriString();
+                .queryParam("site", site)
+                .queryParam("filter", "!9_bDDxJY5") // Стандартный фильтр
+                .queryParam("key", apiKey)
+                .queryParam("access_token", accessToken)
+                .toUriString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
@@ -62,7 +60,8 @@ public class StackOverflowClient {
 
     // Получение последнего ответа
     public JsonNode getLastAnswer(int questionId, String site) {
-        String url = baseUrl + "/questions/" + questionId + "/answers?site=" + site + "&order=desc&sort=creation&filter=withbody";
+        String url = baseUrl + "/questions/" + questionId + "/answers?site=" + site
+                + "&order=desc&sort=creation&filter=withbody";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
 

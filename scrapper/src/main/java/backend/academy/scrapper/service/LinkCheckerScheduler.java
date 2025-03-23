@@ -1,8 +1,8 @@
 package backend.academy.scrapper.service;
 
-import backend.academy.scrapper.client.BotClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.LinkUpdate;
+import backend.academy.scrapper.client.BotClient;
 import backend.academy.scrapper.repository.LinkRepository;
 import java.util.Collections;
 import java.util.List;
@@ -25,12 +25,12 @@ public class LinkCheckerScheduler {
     private int numThreads;
 
     @Value("${app.db.batch-size}")
-    private void setBatchSize(int batchSize) {
+    void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }
 
     @Value("${app.scheduler.num-threads}")
-    private void setNumThreads(int numThreads) {
+    void setNumThreads(int numThreads) {
         this.numThreads = numThreads;
     }
 
@@ -100,19 +100,16 @@ public class LinkCheckerScheduler {
         // Если размер списка меньше или равен числу потоков, каждый поток обрабатывает одну ссылку
         if (links.size() <= numThreads) {
             return links.stream()
-                .map(Collections::singletonList) // Каждая ссылка в отдельном списке
-                .toList();
+                    .map(Collections::singletonList) // Каждая ссылка в отдельном списке
+                    .toList();
         }
 
         // Иначе делим список на подбатчи
         int subBatchSize = (int) Math.ceil((double) links.size() / numThreads);
         return IntStream.range(0, numThreads)
-            .mapToObj(i -> links.subList(
-                i * subBatchSize,
-                Math.min((i + 1) * subBatchSize, links.size())
-            ))
-            .filter(subList -> !subList.isEmpty()) // Исключаем пустые подсписки
-            .toList();
+                .mapToObj(i -> links.subList(i * subBatchSize, Math.min((i + 1) * subBatchSize, links.size())))
+                .filter(subList -> !subList.isEmpty()) // Исключаем пустые подсписки
+                .toList();
     }
 
     private void processSubBatch(long chatId, List<LinkResponse> subBatch) {
@@ -140,9 +137,8 @@ public class LinkCheckerScheduler {
 
     private void sendUpdate(long chatId, String link, String description) {
         LinkUpdate update = new LinkUpdate(
-            chatId, link, description, List.of(chatId) // Отправляем уведомление только этому чату
-        );
+                chatId, link, description, List.of(chatId) // Отправляем уведомление только этому чату
+                );
         botClient.sendUpdate(update);
     }
-
 }

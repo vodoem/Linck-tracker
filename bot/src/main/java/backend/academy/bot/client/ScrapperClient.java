@@ -130,12 +130,8 @@ public class ScrapperClient {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<List<String>> response = restTemplate.exchange(
-                urlPath,
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<>() {}
-            );
+            ResponseEntity<List<String>> response =
+                    restTemplate.exchange(urlPath, HttpMethod.GET, entity, new ParameterizedTypeReference<>() {});
             return response.getBody();
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("Ошибка при получении тегов: " + e.getResponseBodyAsString(), e);
@@ -150,16 +146,11 @@ public class ScrapperClient {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<List<LinkResponse>> response = restTemplate.exchange(
-                urlPath,
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<>() {}
-            );
+            ResponseEntity<List<LinkResponse>> response =
+                    restTemplate.exchange(urlPath, HttpMethod.GET, entity, new ParameterizedTypeReference<>() {});
             return response.getBody(); // Возвращаем список ссылок напрямую
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("Ошибка при фильтрации ссылок по тегу: " + e.getResponseBodyAsString(), e);
         }
     }
-
 }

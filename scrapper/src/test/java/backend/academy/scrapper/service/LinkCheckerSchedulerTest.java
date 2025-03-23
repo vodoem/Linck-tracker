@@ -9,9 +9,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import backend.academy.scrapper.client.BotClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.LinkUpdate;
+import backend.academy.scrapper.client.BotClient;
 import backend.academy.scrapper.repository.LinkRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +42,12 @@ public class LinkCheckerSchedulerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
+        // Устанавливаем значение numThreads вручную
+        linkCheckerScheduler.setNumThreads(4); // Например, 4 потока
+
+        // Устанавливаем значение batchSize вручную
+        linkCheckerScheduler.setBatchSize(10);
+
         // Настройка поведения стратегий
         when(gitHubLinkChecker.checkForUpdates(anyString())).thenReturn(true);
         when(stackOverflowLinkChecker.checkForUpdates(anyString())).thenReturn(false);
@@ -50,6 +56,7 @@ public class LinkCheckerSchedulerTest {
         when(gitHubLinkChecker.getUpdateDescription(anyString())).thenReturn("Репозиторий обновлен");
         when(stackOverflowLinkChecker.getUpdateDescription(anyString())).thenReturn("Новый ответ на вопрос");
 
+        // Устанавливаем стратегии
         List<LinkChecker> linkCheckers = List.of(gitHubLinkChecker, stackOverflowLinkChecker);
         linkCheckerScheduler.setLinkCheckers(linkCheckers);
     }
@@ -67,9 +74,9 @@ public class LinkCheckerSchedulerTest {
         when(linkRepository.getAllChatIds()).thenReturn(List.of(chatId1, chatId2));
 
         // Мок для получения ссылок для каждого чата
-        when(linkRepository.getLinks(chatId1))
+        when(linkRepository.getLinks(chatId1, 0, 10))
                 .thenReturn(List.of(new LinkResponse(chatId1, githubLink, List.of(), List.of())));
-        when(linkRepository.getLinks(chatId2))
+        when(linkRepository.getLinks(chatId2, 0, 10))
                 .thenReturn(List.of(new LinkResponse(chatId2, stackOverflowLink, List.of(), List.of())));
 
         // Act

@@ -40,3 +40,21 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui
+
+---
+# Профиль для SQL
+spring:
+  config:
+    activate:
+      on-profile: sql-test
+app:
+  access-type: SQL
+
+---
+# Профиль для ORM
+spring:
+  config:
+    activate:
+      on-profile: orm-test
+app:
+  access-type: ORM
