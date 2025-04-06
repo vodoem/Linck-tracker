@@ -1,5 +1,9 @@
 package backend.academy.scrapper.repository;
 
+import backend.academy.scrapper.repository.repos.FilterRepository;
+import backend.academy.scrapper.repository.repos.TagRepository;
+import backend.academy.scrapper.repository.repos.TgChatRepository;
+import backend.academy.scrapper.repository.repos.TrackedLinkRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +20,11 @@ public class RepoConfig {
 
     @Bean
     @ConditionalOnProperty(name = "app.access-type", havingValue = "ORM")
-    public LinkRepository ormLinkRepository(EntityManager em) {
-        return new OrmLinkRepository(em);
+    public LinkRepository ormLinkRepository(
+        TgChatRepository tgChatRepository,
+        TrackedLinkRepository trackedLinkRepository,
+        TagRepository tagRepository,
+        FilterRepository filterRepository) {
+        return new OrmLinkRepository(tgChatRepository, trackedLinkRepository, tagRepository, filterRepository);
     }
 }

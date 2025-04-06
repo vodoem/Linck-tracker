@@ -1,7 +1,12 @@
 package backend.academy.bot.client;
 
-import backend.academy.model.*;
+import backend.academy.model.AddLinkRequest;
+import backend.academy.model.AddTagsRequest;
+import backend.academy.model.LinkResponse;
 import java.util.List;
+import backend.academy.model.ListLinksResponse;
+import backend.academy.model.RemoveLinkRequest;
+import backend.academy.model.RemoveTagRequest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -122,7 +127,6 @@ public class ScrapperClient {
         }
     }
 
-    // 3. Получение всех тегов для ссылки
     public List<String> getTagsForLink(long chatId, String url) {
         String urlPath = baseUrl + "/tags/list?url=" + url;
         HttpHeaders headers = new HttpHeaders();
@@ -138,7 +142,6 @@ public class ScrapperClient {
         }
     }
 
-    // 4. Фильтрация ссылок по тегу
     public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
         String urlPath = baseUrl + "/tags/filter?tagName=" + tagName;
         HttpHeaders headers = new HttpHeaders();
