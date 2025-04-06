@@ -68,7 +68,6 @@ public class OrmLinkRepository implements LinkRepository {
     }
 
     @Override
-    @Transactional
     public void removeLink(long chatId, String url) {
         TrackedLink link = trackedLinkRepository.findByChatIdAndUrl(chatId, url)
             .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
@@ -93,7 +92,6 @@ public class OrmLinkRepository implements LinkRepository {
     }
 
     @Override
-    @Transactional
     public void deleteChat(long chatId) {
         tgChatRepository.deleteById(chatId);
     }
@@ -122,7 +120,6 @@ public class OrmLinkRepository implements LinkRepository {
     }
 
     @Override
-    @Transactional
     public void removeTag(long chatId, String url, String tagName) {
         TrackedLink link = trackedLinkRepository.findByChatIdAndUrl(chatId, url)
             .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
