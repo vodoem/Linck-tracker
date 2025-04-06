@@ -4,7 +4,7 @@ import backend.academy.model.AddLinkRequest;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import backend.academy.model.RemoveLinkRequest;
-import backend.academy.scrapper.repository.LinkRepository;
+import backend.academy.scrapper.service.LinkService;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,13 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/links")
 public class LinkController {
-    private final LinkRepository linkRepository;
+    private final LinkService linkService;
 
     @Value("${app.db.batch-size}")
     private int batchSize;
 
-    public LinkController(LinkRepository linkRepository) {
-        this.linkRepository = linkRepository;
+    public LinkController(LinkService linkService) {
+        this.linkService = linkService;
     }
 
     @GetMapping
@@ -40,7 +40,8 @@ public class LinkController {
 
         while (true) {
             // Получаем пакет ссылок
-            List<LinkResponse> links = linkRepository.getLinks(chatId, offset, limit);
+            ListLinksResponse response = linkService.getLinks(chatId, offset, limit);
+            List<LinkResponse> links = response.links();
 
             // Если больше нет данных, завершаем цикл
             if (links.isEmpty()) {
@@ -67,7 +68,7 @@ public class LinkController {
         System.out.println("Добавление ссылки для чата: " + chatId + ", ссылка: " + request.link());
 
         // Добавляем ссылку в репозиторий
-        linkRepository.addLink(chatId, request.link(), request.tags(), request.filters());
+        linkService.addLink(chatId, request);
 
         // Возвращаем ответ
         LinkResponse response = new LinkResponse(chatId, request.link(), request.tags(), request.filters());
@@ -80,7 +81,7 @@ public class LinkController {
         System.out.println("Удаление ссылки для чата: " + chatId + ", ссылка: " + request.link());
 
         // Удаляем ссылку из репозитория
-        linkRepository.removeLink(chatId, request.link());
+        linkService.removeLink(chatId, request);
 
         // Возвращаем успешный ответ
         return ResponseEntity.ok().build();

@@ -23,13 +23,6 @@ public class SqlLinkRepository implements LinkRepository {
 
     @Override
     public void addLink(long chatId, String url, List<String> tags, List<String> filters) {
-        // Проверяем, существует ли ссылка
-        Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM tracked_link WHERE url = ? AND chat_id = ?", Integer.class, url, chatId);
-
-        if (count == null || count > 0) {
-            throw new IllegalArgumentException("Ссылка уже отслеживается.");
-        }
 
         // Добавляем ссылку
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -119,10 +112,6 @@ public class SqlLinkRepository implements LinkRepository {
         Integer linkId = jdbcTemplate.queryForObject(
                 "SELECT id FROM tracked_link WHERE url = ? AND chat_id = ?", Integer.class, url, chatId);
 
-        if (linkId == null) {
-            throw new IllegalArgumentException("Ссылка не найдена.");
-        }
-
         List<Object[]> tagArgs =
                 tags.stream().map(tag -> new Object[] {linkId, tag}).collect(Collectors.toList());
 
@@ -184,5 +173,12 @@ public class SqlLinkRepository implements LinkRepository {
                     return new LinkResponse(id, url, tags, filters);
                 },
                 params);
+    }
+
+    @Override
+    public boolean existsByChatIdAndUrl(long chatId, String url) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM tracked_link WHERE url = ? AND chat_id = ?", Integer.class, url, chatId);
+        return count != null && count > 0;
     }
 }

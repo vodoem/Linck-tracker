@@ -5,44 +5,33 @@ import backend.academy.scrapper.repository.DTO.Filter;
 import backend.academy.scrapper.repository.DTO.Tag;
 import backend.academy.scrapper.repository.DTO.TgChat;
 import backend.academy.scrapper.repository.DTO.TrackedLink;
-import backend.academy.scrapper.repository.repos.FilterRepository;
-import backend.academy.scrapper.repository.repos.TagRepository;
 import backend.academy.scrapper.repository.repos.TgChatRepository;
 import backend.academy.scrapper.repository.repos.TrackedLinkRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 public class OrmLinkRepository implements LinkRepository {
     private final TgChatRepository tgChatRepository;
     private final TrackedLinkRepository trackedLinkRepository;
-    private final TagRepository tagRepository;
-    private final FilterRepository filterRepository;
 
-    public OrmLinkRepository(TgChatRepository tgChatRepository, TrackedLinkRepository trackedLinkRepository, TagRepository tagRepository, FilterRepository filterRepository) {
+    public OrmLinkRepository(TgChatRepository tgChatRepository, TrackedLinkRepository trackedLinkRepository) {
         this.tgChatRepository = tgChatRepository;
         this.trackedLinkRepository = trackedLinkRepository;
-        this.tagRepository = tagRepository;
-        this.filterRepository = filterRepository;
     }
 
     @Override
     @Transactional
     public void addLink(long chatId, String url, List<String> tags, List<String> filters) {
-        // Проверяем, существует ли ссылка
-        if (trackedLinkRepository.findByChatIdAndUrl(chatId, url).isPresent()) {
-            throw new IllegalArgumentException("Ссылка уже отслеживается.");
-        }
 
         // Получаем или создаем чат
-        TgChat chat = tgChatRepository.findById(chatId)
-            .orElseGet(() -> {
-                TgChat newChat = new TgChat();
-                newChat.setId(chatId);
-                return tgChatRepository.save(newChat);
-            });
+        TgChat chat = tgChatRepository.findById(chatId).orElseGet(() -> {
+            TgChat newChat = new TgChat();
+            newChat.setId(chatId);
+            return tgChatRepository.save(newChat);
+        });
 
         // Создаем новую ссылку
         TrackedLink newLink = new TrackedLink();
@@ -69,8 +58,9 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     public void removeLink(long chatId, String url) {
-        TrackedLink link = trackedLinkRepository.findByChatIdAndUrl(chatId, url)
-            .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
+        TrackedLink link = trackedLinkRepository
+                .findByChatIdAndUrl(chatId, url)
+                .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
         trackedLinkRepository.delete(link);
     }
 
@@ -98,16 +88,15 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     public List<Long> getAllChatIds() {
-        return tgChatRepository.findAll().stream()
-            .map(TgChat::getId)
-            .toList();
+        return tgChatRepository.findAll().stream().map(TgChat::getId).toList();
     }
 
     @Override
     @Transactional
     public void addTags(long chatId, String url, List<String> tags) {
-        TrackedLink link = trackedLinkRepository.findByChatIdAndUrl(chatId, url)
-            .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
+        TrackedLink link = trackedLinkRepository
+                .findByChatIdAndUrl(chatId, url)
+                .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
 
         tags.forEach(tagName -> {
             Tag tag = new Tag();
@@ -121,8 +110,9 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     public void removeTag(long chatId, String url, String tagName) {
-        TrackedLink link = trackedLinkRepository.findByChatIdAndUrl(chatId, url)
-            .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
+        TrackedLink link = trackedLinkRepository
+                .findByChatIdAndUrl(chatId, url)
+                .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
 
         link.getTags().removeIf(tag -> tag.getName().equals(tagName));
         trackedLinkRepository.save(link);
@@ -130,11 +120,10 @@ public class OrmLinkRepository implements LinkRepository {
 
     @Override
     public List<String> getTagsForLink(long chatId, String url) {
-        TrackedLink link = trackedLinkRepository.findByChatIdAndUrl(chatId, url)
-            .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
-        return link.getTags().stream()
-            .map(Tag::getName)
-            .toList();
+        TrackedLink link = trackedLinkRepository
+                .findByChatIdAndUrl(chatId, url)
+                .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
+        return link.getTags().stream().map(Tag::getName).toList();
     }
 
     @Override
@@ -145,17 +134,19 @@ public class OrmLinkRepository implements LinkRepository {
 
     private List<LinkResponse> mapToLinkResponses(List<TrackedLink> trackedLinks) {
         return trackedLinks.stream()
-            .map(link -> new LinkResponse(
-                link.getId(),
-                link.getUrl(),
-                link.getTags().stream()
-                    .map(Tag::getName)
-                    .distinct()
-                    .toList(),
-                link.getFilters().stream()
-                    .map(Filter::getValue)
-                    .distinct()
-                    .toList()))
-            .toList();
+                .map(link -> new LinkResponse(
+                        link.getId(),
+                        link.getUrl(),
+                        link.getTags().stream().map(Tag::getName).distinct().toList(),
+                        link.getFilters().stream()
+                                .map(Filter::getValue)
+                                .distinct()
+                                .toList()))
+                .toList();
+    }
+
+    @Override
+    public boolean existsByChatIdAndUrl(long chatId, String url) {
+        return trackedLinkRepository.existsByChatIdAndUrl(chatId, url);
     }
 }

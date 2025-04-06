@@ -23,4 +23,6 @@ public interface LinkRepository {
     List<String> getTagsForLink(long chatId, String url);
 
     List<LinkResponse> getLinksByTag(long chatId, String tagName);
+
+    boolean existsByChatIdAndUrl(long chatId, String url);
 }
