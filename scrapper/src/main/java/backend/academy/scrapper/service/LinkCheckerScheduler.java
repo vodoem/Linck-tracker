@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class LinkCheckerScheduler {
     private final LinkRepository linkRepository;
-    private final BotClient botClient;
+    private final CommunicationService communicationService;
     private Map<String, LinkChecker> linkCheckers; // Карта для хранения стратегий
     private int batchSize;
     private int numThreads;
@@ -34,9 +34,9 @@ public class LinkCheckerScheduler {
         this.numThreads = numThreads;
     }
 
-    public LinkCheckerScheduler(LinkRepository linkRepository, BotClient botClient, List<LinkChecker> linkCheckers) {
+    public LinkCheckerScheduler(LinkRepository linkRepository, CommunicationService communicationService, List<LinkChecker> linkCheckers) {
         this.linkRepository = linkRepository;
-        this.botClient = botClient;
+        this.communicationService = communicationService;
 
         // Инициализация карты стратегий
         this.linkCheckers = (linkCheckers != null)
@@ -139,6 +139,6 @@ public class LinkCheckerScheduler {
         LinkUpdate update = new LinkUpdate(
                 chatId, link, description, List.of(chatId) // Отправляем уведомление только этому чату
                 );
-        botClient.sendUpdate(update);
+        communicationService.sendUpdate(update);
     }
 }

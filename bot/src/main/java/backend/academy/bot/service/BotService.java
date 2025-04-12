@@ -12,13 +12,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BotService {
-    private final ScrapperClient scrapperClient;
+    private final CommunicationService communicationService;
     private final BotStateMachine botStateMachine;
     private static final Pattern URL_PATTERN =
             Pattern.compile("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$", Pattern.CASE_INSENSITIVE);
 
-    public BotService(ScrapperClient scrapperClient, BotStateMachine botStateMachine) {
-        this.scrapperClient = scrapperClient;
+    public BotService(CommunicationService communicationService, BotStateMachine botStateMachine) {
+        this.communicationService = communicationService;
         this.botStateMachine = botStateMachine;
     }
     // Обработка команд
@@ -29,7 +29,7 @@ public class BotService {
         }
         switch (command) {
             case "/start":
-                scrapperClient.registerChat(chatId);
+                communicationService.registerChat(chatId);
                 return "Добро пожаловать! Используйте /help для просмотра доступных команд.";
             case "/help":
                 return """
@@ -50,7 +50,7 @@ public class BotService {
                 botStateMachine.setState(chatId, "waiting_for_untrack_link");
                 return "Введите ссылку для удаления.";
             case "/list":
-                ListLinksResponse linksResponse = scrapperClient.getLinks(chatId);
+                ListLinksResponse linksResponse = communicationService.getLinks(chatId);
                 if (linksResponse.links().isEmpty()) {
                     return "У вас нет отслеживаемых ссылок.";
                 }
@@ -84,7 +84,7 @@ public class BotService {
                 }
 
                 // Получаем текущие ссылки для чата
-                ListLinksResponse linksResponse = scrapperClient.getLinks(chatId);
+                ListLinksResponse linksResponse = communicationService.getLinks(chatId);
                 boolean isLinkAlreadyTracked = linksResponse.links().stream()
                         .anyMatch(link -> link.url().equals(message));
 
@@ -120,11 +120,11 @@ public class BotService {
                 List<String> pendingTags = botStateMachine.getPendingTags(chatId);
                 List<String> pendingFilters = botStateMachine.getPendingFilters(chatId);
 
-                scrapperClient.addLink(chatId, link, pendingTags, pendingFilters);
+                communicationService.addLink(chatId, link, pendingTags, pendingFilters);
                 botStateMachine.clearState(chatId);
                 return "Ссылка успешно добавлена с тэгами: " + pendingTags + " и фильтрами: " + pendingFilters;
             case "waiting_for_untrack_link":
-                scrapperClient.removeLink(chatId, message);
+                communicationService.removeLink(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Ссылка удалена из отслеживания.";
 
@@ -132,7 +132,7 @@ public class BotService {
                 String[] parts = message.split(" ");
                 String url = parts[0];
                 List<String> tagsForUrl = Arrays.asList(Arrays.copyOfRange(parts, 1, parts.length));
-                scrapperClient.addTags(chatId, url, tagsForUrl);
+                communicationService.addTags(chatId, url, tagsForUrl);
                 botStateMachine.clearState(chatId);
                 return "Теги успешно добавлены.";
 
@@ -140,17 +140,17 @@ public class BotService {
                 String[] removeParts = message.split(" ");
                 String removeUrl = removeParts[0];
                 String tagName = removeParts[1];
-                scrapperClient.removeTag(chatId, removeUrl, tagName);
+                communicationService.removeTag(chatId, removeUrl, tagName);
                 botStateMachine.clearState(chatId);
                 return "Тег успешно удален.";
 
             case "waiting_for_listtags":
-                List<String> tagsList = scrapperClient.getTagsForLink(chatId, message);
+                List<String> tagsList = communicationService.getTagsForLink(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Теги для ссылки: " + String.join(", ", tagsList);
 
             case "waiting_for_filterbytag":
-                List<LinkResponse> filteredLinks = scrapperClient.getLinksByTag(chatId, message);
+                List<LinkResponse> filteredLinks = communicationService.getLinksByTag(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Ссылки с тегом '" + message + "':\n"
                         + filteredLinks.stream().map(LinkResponse::url).collect(Collectors.joining("\n"));

@@ -11,7 +11,8 @@ public record ScrapperConfig(
         StackOverflowCredentials stackOverflow,
         @NotEmpty String accessType,
         DbConfig db,
-        SchedulerConfig scheduler) {
+        SchedulerConfig scheduler,
+        @NotEmpty String messageTransport) {
     public record StackOverflowCredentials(@NotEmpty String key, @NotEmpty String accessToken) {}
 
     public record DbConfig(int batchSize) {}
