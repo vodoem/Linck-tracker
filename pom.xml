@@ -17,6 +17,7 @@
 
     <modules>
         <module>bot</module>
+        <module>models</module>
         <module>report</module>
         <module>scrapper</module>
     </modules>

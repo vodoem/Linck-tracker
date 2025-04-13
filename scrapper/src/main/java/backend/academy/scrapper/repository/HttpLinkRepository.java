@@ -1,14 +1,12 @@
 package backend.academy.scrapper.repository;
 
-import backend.academy.scrapper.model.LinkResponse;
+import backend.academy.model.LinkResponse;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public class HttpLinkRepository implements LinkRepository {
     private final Map<Long, List<LinkResponse>> chatLinks =
             new ConcurrentHashMap<>(); // Храним ссылки для каждого chatId
@@ -29,7 +27,7 @@ public class HttpLinkRepository implements LinkRepository {
     }
 
     @Override
-    public List<LinkResponse> getLinks(long chatId) {
+    public List<LinkResponse> getLinks(long chatId, int offset, int limit) {
         return chatLinks.getOrDefault(chatId, Collections.emptyList());
     }
 
@@ -46,5 +44,26 @@ public class HttpLinkRepository implements LinkRepository {
     @Override
     public List<Long> getAllChatIds() {
         return new ArrayList<>(chatLinks.keySet());
+    }
+
+    @Override
+    public void addTags(long chatId, String url, List<String> tags) {}
+
+    @Override
+    public void removeTag(long chatId, String url, String tagName) {}
+
+    @Override
+    public List<String> getTagsForLink(long chatId, String url) {
+        return List.of();
+    }
+
+    @Override
+    public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
+        return List.of();
+    }
+
+    @Override
+    public boolean existsByChatIdAndUrl(long chatId, String url) {
+        return false;
     }
 }

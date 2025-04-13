@@ -134,6 +134,141 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponse'
+  /tags:
+    post:
+      summary: Добавить теги к ссылке
+      parameters:
+        - name: Tg-Chat-Id
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTagsRequest'
+        required: true
+      responses:
+        '200':
+          description: Теги успешно добавлены
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: Ссылка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+
+    delete:
+      summary: Удалить тег из ссылки
+      parameters:
+        - name: Tg-Chat-Id
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveTagRequest'
+        required: true
+      responses:
+        '200':
+          description: Тег успешно удален
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: Ссылка или тег не найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+
+  /tags/list:
+    get:
+      summary: Получить все теги для ссылки
+      parameters:
+        - name: Tg-Chat-Id
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+      responses:
+        '200':
+          description: Теги успешно получены
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: Ссылка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+
+  /tags/filter:
+    get:
+      summary: Получить ссылки по тегу
+      parameters:
+        - name: Tg-Chat-Id
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: tagName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ссылки успешно получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListLinksResponse'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: Ссылки с указанным тегом не найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
 components:
   schemas:
     LinkResponse:
@@ -192,9 +327,31 @@ components:
         size:
           type: integer
           format: int32
+
     RemoveLinkRequest:
       type: object
       properties:
         link:
           type: string
           format: uri
+
+    AddTagsRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        tags:
+          type: array
+          items:
+            type: string
+
+    RemoveTagRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        tagName:
+          type: string
+

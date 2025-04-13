@@ -1,14 +1,18 @@
 package backend.academy.scrapper.service;
 
+import backend.academy.model.LinkResponse;
+import backend.academy.model.LinkUpdate;
 import backend.academy.scrapper.client.BotClient;
-import backend.academy.scrapper.model.LinkResponse;
-import backend.academy.scrapper.model.LinkUpdate;
 import backend.academy.scrapper.repository.LinkRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +21,18 @@ public class LinkCheckerScheduler {
     private final LinkRepository linkRepository;
     private final BotClient botClient;
     private Map<String, LinkChecker> linkCheckers; // Карта для хранения стратегий
+    private int batchSize;
+    private int numThreads;
+
+    @Value("${app.db.batch-size}")
+    void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    @Value("${app.scheduler.num-threads}")
+    void setNumThreads(int numThreads) {
+        this.numThreads = numThreads;
+    }
 
     public LinkCheckerScheduler(LinkRepository linkRepository, BotClient botClient, List<LinkChecker> linkCheckers) {
         this.linkRepository = linkRepository;
@@ -46,27 +62,66 @@ public class LinkCheckerScheduler {
                 : Collections.emptyMap();
     }
 
-    @Scheduled(fixedRate = 30000) // Каждые 30 секунд
+    @Scheduled(fixedDelayString = "${app.scheduler.delay-ms}") // Каждые N миллисекунд
     public void checkLinks() {
         List<Long> chatIds = linkRepository.getAllChatIds(); // Получаем все chatId
-        for (long chatId : chatIds) {
-            List<LinkResponse> links = linkRepository.getLinks(chatId); // Получаем ссылки для каждого чата
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads); // Пул потоков
 
-            if (!links.isEmpty()) { // Проверяем только чаты с ссылками
-                for (String link : links.stream().map(LinkResponse::url).toList()) {
-                    processLink(chatId, link);
+        for (long chatId : chatIds) {
+            int offset = 0;
+            while (true) {
+                // Загружаем батч ссылок
+                List<LinkResponse> links = linkRepository.getLinks(chatId, offset, batchSize);
+                if (links.isEmpty()) {
+                    break; // Если больше нет ссылок, завершаем цикл
                 }
+
+                // Разделяем батч на подзадачи
+                List<List<LinkResponse>> batches = splitIntoSubBatches(links, numThreads);
+
+                // Обрабатываем каждую подзадачу в отдельном потоке
+                for (List<LinkResponse> subBatch : batches) {
+                    executor.submit(() -> processSubBatch(chatId, subBatch));
+                }
+
+                offset += batchSize; // Переходим к следующему батчу
             }
         }
+
+        executor.shutdown(); // Останавливаем пул потоков после завершения
     }
 
-    private void processLink(long chatId, String link) {
-        String platform = detectPlatform(link); // Определяем платформу по ссылке
-        LinkChecker checker = linkCheckers.get(platform);
+    private List<List<LinkResponse>> splitIntoSubBatches(List<LinkResponse> links, int numThreads) {
+        // Если список ссылок пустой, возвращаем пустой список
+        if (links.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        if (checker != null && checker.checkForUpdates(link)) {
-            String description = checker.getUpdateDescription(link);
-            sendUpdate(chatId, link, description);
+        // Если размер списка меньше или равен числу потоков, каждый поток обрабатывает одну ссылку
+        if (links.size() <= numThreads) {
+            return links.stream()
+                    .map(Collections::singletonList) // Каждая ссылка в отдельном списке
+                    .toList();
+        }
+
+        // Иначе делим список на подбатчи
+        int subBatchSize = (int) Math.ceil((double) links.size() / numThreads);
+        return IntStream.range(0, numThreads)
+                .mapToObj(i -> links.subList(i * subBatchSize, Math.min((i + 1) * subBatchSize, links.size())))
+                .filter(subList -> !subList.isEmpty()) // Исключаем пустые подсписки
+                .toList();
+    }
+
+    private void processSubBatch(long chatId, List<LinkResponse> subBatch) {
+        for (LinkResponse linkResponse : subBatch) {
+            String link = linkResponse.url();
+            String platform = detectPlatform(link); // Определяем платформу по ссылке
+            LinkChecker checker = linkCheckers.get(platform);
+
+            if (checker != null && checker.checkForUpdates(link)) {
+                String description = checker.getUpdateDescription(link);
+                sendUpdate(chatId, link, description);
+            }
         }
     }
 

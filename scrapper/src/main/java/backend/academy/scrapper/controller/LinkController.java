@@ -1,11 +1,13 @@
 package backend.academy.scrapper.controller;
 
-import backend.academy.scrapper.model.AddLinkRequest;
-import backend.academy.scrapper.model.LinkResponse;
-import backend.academy.scrapper.model.ListLinksResponse;
-import backend.academy.scrapper.model.RemoveLinkRequest;
-import backend.academy.scrapper.repository.HttpLinkRepository;
+import backend.academy.model.AddLinkRequest;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.ListLinksResponse;
+import backend.academy.model.RemoveLinkRequest;
+import backend.academy.scrapper.service.LinkService;
+import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,21 +20,43 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/links")
 public class LinkController {
-    private final HttpLinkRepository linkRepository;
+    private final LinkService linkService;
 
-    public LinkController(HttpLinkRepository linkRepository) {
-        this.linkRepository = linkRepository;
+    @Value("${app.db.batch-size}")
+    private int batchSize;
+
+    public LinkController(LinkService linkService) {
+        this.linkService = linkService;
     }
 
     @GetMapping
     public ResponseEntity<ListLinksResponse> getLinks(@RequestHeader("Tg-Chat-Id") long chatId) {
         System.out.println("Получение ссылок для чата: " + chatId);
 
-        // Получаем список ссылок из репозитория
-        List<LinkResponse> links = linkRepository.getLinks(chatId);
+        // Параметры пагинации
+        int offset = 0;
+        int limit = batchSize; // Размер пакета из конфигурации
+        List<LinkResponse> allLinks = new ArrayList<>();
+
+        while (true) {
+            // Получаем пакет ссылок
+            ListLinksResponse response = linkService.getLinks(chatId, offset, limit);
+            List<LinkResponse> links = response.links();
+
+            // Если больше нет данных, завершаем цикл
+            if (links.isEmpty()) {
+                break;
+            }
+
+            // Добавляем загруженные ссылки в общий список
+            allLinks.addAll(links);
+
+            // Переходим к следующему пакету
+            offset += limit;
+        }
 
         // Создаем объект ListLinksResponse с данными
-        ListLinksResponse listLinksResponse = new ListLinksResponse(links, links.size());
+        ListLinksResponse listLinksResponse = new ListLinksResponse(allLinks, allLinks.size());
 
         // Возвращаем ответ
         return ResponseEntity.ok(listLinksResponse);
@@ -44,7 +68,7 @@ public class LinkController {
         System.out.println("Добавление ссылки для чата: " + chatId + ", ссылка: " + request.link());
 
         // Добавляем ссылку в репозиторий
-        linkRepository.addLink(chatId, request.link(), request.tags(), request.filters());
+        linkService.addLink(chatId, request);
 
         // Возвращаем ответ
         LinkResponse response = new LinkResponse(chatId, request.link(), request.tags(), request.filters());
@@ -57,7 +81,7 @@ public class LinkController {
         System.out.println("Удаление ссылки для чата: " + chatId + ", ссылка: " + request.link());
 
         // Удаляем ссылку из репозитория
-        linkRepository.removeLink(chatId, request.link());
+        linkService.removeLink(chatId, request);
 
         // Возвращаем успешный ответ
         return ResponseEntity.ok().build();
