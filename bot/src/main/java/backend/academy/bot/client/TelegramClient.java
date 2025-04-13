@@ -30,7 +30,11 @@ public class TelegramClient {
                 new BotCommand("help", "Показать доступные команды"),
                 new BotCommand("track", "Добавить ссылку для отслеживания"),
                 new BotCommand("untrack", "Удалить ссылку из отслеживания"),
-                new BotCommand("list", "Показать список отслеживаемых ссылок")));
+                new BotCommand("list", "Показать список отслеживаемых ссылок"),
+                new BotCommand("addtags", "Добавить теги к ссылке"),
+                new BotCommand("removetag", "Удалить тег из ссылки"),
+                new BotCommand("listtags", "Показать все теги для ссылки"),
+                new BotCommand("filterbytag", "Показать ссылки с указанным тегом")));
         if (!response.isOk()) {
             throw new RuntimeException("Failed to set commands: " + response.description());
         }

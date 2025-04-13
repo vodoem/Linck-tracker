@@ -31,4 +31,21 @@ public class GitHubClient {
 
         return Objects.requireNonNull(response.getBody()).get("updated_at").asText();
     }
+
+    public JsonNode getLatestIssueOrPR(String owner, String repo) {
+        String url = baseUrl + "/repos/" + owner + "/" + repo + "/issues?state=open&sort=updated&direction=desc";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + System.getenv("GITHUB_TOKEN"));
+        headers.set("Accept", "application/vnd.github.v3+json");
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
+
+        JsonNode body = response.getBody();
+        if (body == null || !body.isArray() || body.isEmpty()) {
+            return null; // Нет открытых PR/Issue
+        }
+
+        return body.get(0); // Возвращаем только последний PR/Issue
+    }
 }

@@ -1,18 +1,37 @@
 app:
+  access-type: ORM # или SQL
   github-token: ${GITHUB_TOKEN} # env variable
   stackoverflow:
     key: ${SO_TOKEN_KEY}
     access-token: ${SO_ACCESS_TOKEN}
+  db:
+      batch-size: 1000 # Размер батча
+  scheduler:
+    delay-ms: 30000 # Интервал между проверками (30 секунд)
+    num-threads: 4 # Количество потоков
 
 spring:
   application:
     name: Scrapper
+  datasource:
+    url: jdbc:postgresql://localhost:5433/scrapper
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    jpa:
+      hibernate:
+        ddl-auto: update
+      properties:
+        hibernate:
+          jdbc:
+            lob:
+              non_contextual_creation: true
   liquibase:
     enabled: false
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
+#    change-log: ./migrations/master.xml
+#    url: ${spring.datasource.url}
+#    user: ${spring.datasource.username}
+#    password: ${spring.datasource.password}
 
 server:
   port: 8081
@@ -21,3 +40,21 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui
+
+---
+# Профиль для SQL
+spring:
+  config:
+    activate:
+      on-profile: sql-test
+app:
+  access-type: SQL
+
+---
+# Профиль для ORM
+spring:
+  config:
+    activate:
+      on-profile: orm-test
+app:
+  access-type: ORM

@@ -1,8 +1,8 @@
 package backend.academy.bot.service;
 
 import backend.academy.bot.client.ScrapperClient;
-import backend.academy.bot.model.LinkResponse;
-import backend.academy.bot.model.ListLinksResponse;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.ListLinksResponse;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +38,10 @@ public class BotService {
                     /track - добавить ссылку для отслеживания
                     /untrack - удалить ссылку из отслеживания
                     /list - показать список отслеживаемых ссылок
+                    /addtags <url> <tag1> <tag2> ... — добавить теги к ссылке.
+                    /removetag <url> <tag> — удалить тег из ссылки.
+                    /listtags <url> — показать все теги для ссылки.
+                    /filterbytag <tag> — показать только ссылки с указанным тегом.
                     """;
             case "/track":
                 botStateMachine.setState(chatId, "waiting_for_link");
@@ -52,6 +56,18 @@ public class BotService {
                 }
                 return "Ваши отслеживаемые ссылки:\n"
                         + linksResponse.links().stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
+            case "/addtags":
+                botStateMachine.setState(chatId, "waiting_for_addtags");
+                return "Введите URL и теги через пробел.";
+            case "/removetag":
+                botStateMachine.setState(chatId, "waiting_for_removetag");
+                return "Введите URL и имя тега через пробел.";
+            case "/listtags":
+                botStateMachine.setState(chatId, "waiting_for_listtags");
+                return "Введите URL для просмотра тегов.";
+            case "/filterbytag":
+                botStateMachine.setState(chatId, "waiting_for_filterbytag");
+                return "Введите имя тега для фильтрации ссылок.";
             default:
                 return "Неизвестная команда. Используйте /help для просмотра доступных команд.";
         }
@@ -80,16 +96,24 @@ public class BotService {
                 // Добавляем ссылку
                 botStateMachine.setPendingLink(chatId, message);
                 botStateMachine.setState(chatId, "waiting_for_tags");
-                return "Введите тэги (через пробел). Если тэги не нужны, отправьте пустое сообщение.";
+                return "Введите тэги (через пробел). Если тэги не нужны, отправьте -";
             case "waiting_for_tags":
                 List<String> tags = Arrays.asList(message.trim().split("\\s+"));
-                botStateMachine.setPendingTags(chatId, tags.isEmpty() ? Collections.emptyList() : tags);
+                if (tags.size() == 1 && "-".equals(tags.get(0))) {
+                    botStateMachine.setPendingTags(chatId, Collections.emptyList());
+                } else {
+                    botStateMachine.setPendingTags(chatId, tags);
+                }
                 botStateMachine.setState(chatId, "waiting_for_filters");
-                return "Настройте фильтры (например, user:dummy type:comment). Если фильтры не нужны, отправьте пустое сообщение.";
+                return "Настройте фильтры (например, user:dummy type:comment). Если фильтры не нужны, отправьте -";
 
             case "waiting_for_filters":
                 List<String> filters = Arrays.asList(message.trim().split("\\s+"));
-                botStateMachine.setPendingFilters(chatId, filters.isEmpty() ? Collections.emptyList() : filters);
+                if (filters.size() == 1 && "-".equals(filters.get(0))) {
+                    botStateMachine.setPendingFilters(chatId, Collections.emptyList());
+                } else {
+                    botStateMachine.setPendingFilters(chatId, filters);
+                }
 
                 // Добавляем ссылку в репозиторий
                 String link = botStateMachine.getPendingLink(chatId);
@@ -99,11 +123,37 @@ public class BotService {
                 scrapperClient.addLink(chatId, link, pendingTags, pendingFilters);
                 botStateMachine.clearState(chatId);
                 return "Ссылка успешно добавлена с тэгами: " + pendingTags + " и фильтрами: " + pendingFilters;
-
             case "waiting_for_untrack_link":
                 scrapperClient.removeLink(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Ссылка удалена из отслеживания.";
+
+            case "waiting_for_addtags":
+                String[] parts = message.split(" ");
+                String url = parts[0];
+                List<String> tagsForUrl = Arrays.asList(Arrays.copyOfRange(parts, 1, parts.length));
+                scrapperClient.addTags(chatId, url, tagsForUrl);
+                botStateMachine.clearState(chatId);
+                return "Теги успешно добавлены.";
+
+            case "waiting_for_removetag":
+                String[] removeParts = message.split(" ");
+                String removeUrl = removeParts[0];
+                String tagName = removeParts[1];
+                scrapperClient.removeTag(chatId, removeUrl, tagName);
+                botStateMachine.clearState(chatId);
+                return "Тег успешно удален.";
+
+            case "waiting_for_listtags":
+                List<String> tagsList = scrapperClient.getTagsForLink(chatId, message);
+                botStateMachine.clearState(chatId);
+                return "Теги для ссылки: " + String.join(", ", tagsList);
+
+            case "waiting_for_filterbytag":
+                List<LinkResponse> filteredLinks = scrapperClient.getLinksByTag(chatId, message);
+                botStateMachine.clearState(chatId);
+                return "Ссылки с тегом '" + message + "':\n"
+                        + filteredLinks.stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
 
             default:
                 return "Неизвестное сообщение. Используйте /help для просмотра доступных команд.";

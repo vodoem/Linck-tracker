@@ -1,9 +1,11 @@
 package backend.academy.bot.client;
 
-import backend.academy.bot.model.AddLinkRequest;
-import backend.academy.bot.model.LinkResponse;
-import backend.academy.bot.model.ListLinksResponse;
-import backend.academy.bot.model.RemoveLinkRequest;
+import backend.academy.model.AddLinkRequest;
+import backend.academy.model.AddTagsRequest;
+import backend.academy.model.LinkResponse;
+import backend.academy.model.ListLinksResponse;
+import backend.academy.model.RemoveLinkRequest;
+import backend.academy.model.RemoveTagRequest;
 import java.util.List;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -88,6 +90,70 @@ public class ScrapperClient {
             restTemplate.exchange(url, HttpMethod.DELETE, entity, Void.class);
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("Ошибка удаления ссылки: " + e.getResponseBodyAsString(), e);
+        }
+    }
+
+    // 1. Добавление тегов к ссылке
+    public void addTags(long chatId, String url, List<String> tags) {
+        String urlPath = baseUrl + "/tags";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Tg-Chat-Id", String.valueOf(chatId));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        AddTagsRequest request = new AddTagsRequest(url, tags);
+        HttpEntity<AddTagsRequest> entity = new HttpEntity<>(request, headers);
+
+        try {
+            restTemplate.postForEntity(urlPath, entity, Void.class);
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Ошибка при добавлении тегов: " + e.getResponseBodyAsString(), e);
+        }
+    }
+
+    // 2. Удаление тега из ссылки
+    public void removeTag(long chatId, String url, String tagName) {
+        String urlPath = baseUrl + "/tags";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Tg-Chat-Id", String.valueOf(chatId));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        RemoveTagRequest request = new RemoveTagRequest(url, tagName);
+        HttpEntity<RemoveTagRequest> entity = new HttpEntity<>(request, headers);
+
+        try {
+            restTemplate.exchange(urlPath, HttpMethod.DELETE, entity, Void.class);
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Ошибка при удалении тега: " + e.getResponseBodyAsString(), e);
+        }
+    }
+
+    public List<String> getTagsForLink(long chatId, String url) {
+        String urlPath = baseUrl + "/tags/list?url=" + url;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Tg-Chat-Id", String.valueOf(chatId));
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<List<String>> response =
+                    restTemplate.exchange(urlPath, HttpMethod.GET, entity, new ParameterizedTypeReference<>() {});
+            return response.getBody();
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Ошибка при получении тегов: " + e.getResponseBodyAsString(), e);
+        }
+    }
+
+    public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
+        String urlPath = baseUrl + "/tags/filter?tagName=" + tagName;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Tg-Chat-Id", String.valueOf(chatId));
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<List<LinkResponse>> response =
+                    restTemplate.exchange(urlPath, HttpMethod.GET, entity, new ParameterizedTypeReference<>() {});
+            return response.getBody(); // Возвращаем список ссылок напрямую
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Ошибка при фильтрации ссылок по тегу: " + e.getResponseBodyAsString(), e);
         }
     }
 }

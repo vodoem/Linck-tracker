@@ -1,6 +1,6 @@
 package backend.academy.scrapper.exceptionhandler;
 
-import backend.academy.scrapper.model.ApiErrorResponse;
+import backend.academy.model.ApiErrorResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,6 +1,6 @@
 package backend.academy.bot.exceptionhandler;
 
-import backend.academy.bot.model.ApiErrorResponse;
+import backend.academy.model.ApiErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import org.springframework.http.HttpStatus;
