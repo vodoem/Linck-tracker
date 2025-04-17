@@ -1,10 +1,7 @@
 package backend.academy.bot.kafka;
 
 import backend.academy.bot.client.TelegramClient;
-import backend.academy.model.GetLinksResponse;
-import backend.academy.model.KafkaLinksResponse;
 import backend.academy.model.KafkaResponse;
-import backend.academy.model.KafkaTagsResponse;
 import backend.academy.model.LinkUpdate;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,8 +22,8 @@ public class KafkaConsumerService {
 
 
     @KafkaListener(topics = "${kafka.topic.response-topic}", groupId = "bot-group")
-    public void handleResponse(ConsumerRecord<String, Object> record) {
-        Object response = record.value(); // Извлекаем значение из ConsumerRecord
+    public void handleResponse(ConsumerRecord<String, KafkaResponse> record) {
+        KafkaResponse response = record.value(); // Извлекаем значение из ConsumerRecord
         kafkaCommunicationService.handleResponse(response);
     }
 

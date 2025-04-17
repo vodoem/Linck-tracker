@@ -12,9 +12,11 @@ import java.util.List;
 public class HttpCommunicationService implements CommunicationService {
 
     private final ScrapperClient scrapperClient;
+    private final RedisCacheService redisCacheService;
 
-    public HttpCommunicationService(ScrapperClient scrapperClient) {
+    public HttpCommunicationService(ScrapperClient scrapperClient, RedisCacheService redisCacheService) {
         this.scrapperClient = scrapperClient;
+        this.redisCacheService = redisCacheService;
     }
 
     @Override
@@ -31,16 +33,26 @@ public class HttpCommunicationService implements CommunicationService {
     @Override
     public void addLink(long chatId, String link, List<String> tags, List<String> filters) {
         scrapperClient.addLink(chatId, link, tags, filters);
+        redisCacheService.invalidateCache(chatId);
     }
 
     @Override
     public void removeLink(long chatId, String link) {
         scrapperClient.removeLink(chatId, link);
+        redisCacheService.invalidateCache(chatId);
     }
 
     @Override
     public ListLinksResponse getLinks(long chatId) {
-        return scrapperClient.getLinks(chatId);
+        ListLinksResponse cachedResponse = redisCacheService.getFromCache(chatId);
+        if (cachedResponse != null) {
+            System.out.println("Данные получены из кэша");
+            return cachedResponse;
+        }
+
+        ListLinksResponse response = scrapperClient.getLinks(chatId);
+        redisCacheService.saveToCache(chatId, response);
+        return response;
     }
 
     @Override
