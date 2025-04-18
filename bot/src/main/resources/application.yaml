@@ -1,6 +1,7 @@
 app:
   telegram-token: ${TELEGRAM_TOKEN} # env variable
   message-transport: Kafka # Kafka или HTTP
+  digest: "0 0 10 * * ?" # Каждый день в 10:00
 
 spring:
   application:

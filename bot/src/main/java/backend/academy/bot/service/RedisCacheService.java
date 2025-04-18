@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -45,5 +47,48 @@ public class RedisCacheService {
 
     public void invalidateCache(long chatId) {
         redisTemplate.delete(getCacheKey(chatId));
+    }
+
+    // Ключ для режима уведомлений
+    private String getNotificationModeKey(long chatId) {
+        return "notification_mode:" + chatId;
+    }
+
+    // Получение режима уведомлений
+    public String getNotificationMode(long chatId) {
+        return redisTemplate.opsForValue().get(getNotificationModeKey(chatId));
+    }
+
+    // Установка режима уведомлений
+    public void setNotificationMode(long chatId, String mode) {
+        redisTemplate.opsForValue().set(getNotificationModeKey(chatId), mode);
+    }
+
+    // Ключ для накопления уведомлений
+    private String getNotificationBatchKey(long chatId) {
+        return "notification_batch:" + chatId;
+    }
+
+    // Добавление уведомления в батч
+    public void addNotificationToBatch(long chatId, String notification) {
+        redisTemplate.opsForList().rightPush(getNotificationBatchKey(chatId), notification);
+    }
+
+    // Получение всех уведомлений из батча
+    public List<String> getNotificationsFromBatch(long chatId) {
+        return redisTemplate.opsForList().range(getNotificationBatchKey(chatId), 0, -1);
+    }
+
+    // Очистка батча
+    public void clearNotificationBatch(long chatId) {
+        redisTemplate.delete(getNotificationBatchKey(chatId));
+    }
+
+    // Получение всех chatId с накопленными уведомлениями
+    public List<Long> getAllChatIdsWithNotifications() {
+        Set<String> keys = redisTemplate.keys("notification_batch:*");
+        return keys.stream()
+            .map(key -> Long.parseLong(key.replace("notification_batch:", "")))
+            .toList();
     }
 }

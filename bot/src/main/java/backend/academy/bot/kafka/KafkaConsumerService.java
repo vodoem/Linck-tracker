@@ -1,6 +1,7 @@
 package backend.academy.bot.kafka;
 
 import backend.academy.bot.client.TelegramClient;
+import backend.academy.bot.service.RedisCacheService;
 import backend.academy.model.KafkaResponse;
 import backend.academy.model.LinkUpdate;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -14,10 +15,12 @@ public class KafkaConsumerService {
 
     private final TelegramClient telegramClient;
     private final KafkaCommunicationService kafkaCommunicationService;
+    private final RedisCacheService redisCacheService;
 
-    public KafkaConsumerService(TelegramClient telegramClient, KafkaCommunicationService kafkaCommunicationService) {
+    public KafkaConsumerService(TelegramClient telegramClient, KafkaCommunicationService kafkaCommunicationService, RedisCacheService redisCacheService) {
         this.telegramClient = telegramClient;
         this.kafkaCommunicationService = kafkaCommunicationService;
+        this.redisCacheService = redisCacheService;
     }
 
 
@@ -34,7 +37,17 @@ public class KafkaConsumerService {
         try {
             if (linkUpdate.tgChatIds() != null && !linkUpdate.tgChatIds().isEmpty()) {
                 for (Long chatId : linkUpdate.tgChatIds()) {
-                    sendNotification(chatId, linkUpdate);
+                    String mode = redisCacheService.getNotificationMode(chatId);
+
+                    if ("immediate".equals(mode)) {
+                        sendNotification(chatId, linkUpdate);
+                    } else {
+                        // Сохраняем уведомление в Redis для дайджеста
+                        String notification = "Обновление ссылки:\n"
+                            + "URL: " + linkUpdate.url() + "\n"
+                            + "Описание: " + linkUpdate.description();
+                        redisCacheService.addNotificationToBatch(chatId, notification);
+                    }
                 }
             } else {
                 throw new IllegalArgumentException("Отсутствуют chatId для отправки уведомления.");
