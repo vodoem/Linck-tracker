@@ -149,4 +149,9 @@ public class OrmLinkRepository implements LinkRepository {
     public boolean existsByChatIdAndUrl(long chatId, String url) {
         return trackedLinkRepository.existsByChatIdAndUrl(chatId, url);
     }
+
+    @Override
+    public List<String> getFiltersForLink(long chatId, String url) {
+        return trackedLinkRepository.getFiltersForLink(chatId, url);
+    }
 }
