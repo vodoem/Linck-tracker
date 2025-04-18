@@ -1,5 +1,5 @@
 app:
-  message-transport: HTTP # Kafka или HTTP
+  message-transport: Kafka # Kafka или HTTP
   access-type: ORM # или SQL
   github-token: ${GITHUB_TOKEN} # env variable
   stackoverflow:

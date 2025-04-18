@@ -30,11 +30,18 @@ public class KafkaConsumerService {
     @KafkaListener(topics = "${kafka.topic.link-updates}", groupId = "bot-group")
     public void handleLinkUpdate(LinkUpdate linkUpdate) {
         System.out.println("Получено обновление ссылки: " + linkUpdate);
-        // Логика обработки обновления (например, отправка уведомлений в Telegram)
-        if (linkUpdate.tgChatIds() != null && !linkUpdate.tgChatIds().isEmpty()) {
-            for (Long chatId : linkUpdate.tgChatIds()) {
-                sendNotification(chatId, linkUpdate);
+
+        try {
+            if (linkUpdate.tgChatIds() != null && !linkUpdate.tgChatIds().isEmpty()) {
+                for (Long chatId : linkUpdate.tgChatIds()) {
+                    sendNotification(chatId, linkUpdate);
+                }
+            } else {
+                throw new IllegalArgumentException("Отсутствуют chatId для отправки уведомления.");
             }
+        } catch (Exception e) {
+            System.err.println("Ошибка при обработке обновления: " + e.getMessage());
+            throw e;
         }
     }
 

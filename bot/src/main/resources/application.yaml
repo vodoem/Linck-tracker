@@ -1,6 +1,6 @@
 app:
   telegram-token: ${TELEGRAM_TOKEN} # env variable
-  message-transport: HTTP # Kafka или HTTP
+  message-transport: Kafka # Kafka или HTTP
 
 spring:
   application:
