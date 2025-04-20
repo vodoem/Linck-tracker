@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 public class BotServiceUnknownCommandTest {
-    private final BotService botService = new BotService(null, null);
+    private final BotService botService = new BotService(null, null, null, null);
 
     @Test
     void testUnknownCommand() {

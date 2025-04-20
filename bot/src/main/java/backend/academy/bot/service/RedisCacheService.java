@@ -91,4 +91,12 @@ public class RedisCacheService {
             .map(key -> Long.parseLong(key.replace("notification_batch:", "")))
             .toList();
     }
+
+    public void clearAllNotificationData() {
+        // Удаляем все ключи связанные с уведомлениями
+        Set<String> keys = redisTemplate.keys("notification_*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
 }
