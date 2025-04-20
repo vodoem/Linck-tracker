@@ -1,6 +1,5 @@
 package backend.academy.bot.service;
 
-import backend.academy.bot.client.ScrapperClient;
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
@@ -21,7 +20,11 @@ public class BotService {
     private static final Pattern URL_PATTERN =
             Pattern.compile("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$", Pattern.CASE_INSENSITIVE);
 
-    public BotService(CommunicationService communicationService, BotStateMachine botStateMachine, RedisCacheService redisCacheService, TelegramClient telegramClient) {
+    public BotService(
+            CommunicationService communicationService,
+            BotStateMachine botStateMachine,
+            RedisCacheService redisCacheService,
+            TelegramClient telegramClient) {
         this.communicationService = communicationService;
         this.botStateMachine = botStateMachine;
         this.redisCacheService = redisCacheService;

@@ -2,13 +2,14 @@ package backend.academy.bot.service;
 
 import backend.academy.model.ListLinksResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class RedisCacheService {
@@ -39,7 +40,9 @@ public class RedisCacheService {
     public void saveToCache(long chatId, ListLinksResponse response) {
         try {
             String jsonData = new ObjectMapper().writeValueAsString(response);
-            redisTemplate.opsForValue().set(getCacheKey(chatId), jsonData, 10, TimeUnit.MINUTES); // Кэш действителен 10 минут
+            redisTemplate
+                    .opsForValue()
+                    .set(getCacheKey(chatId), jsonData, 10, TimeUnit.MINUTES); // Кэш действителен 10 минут
         } catch (Exception e) {
             throw new RuntimeException("Ошибка сериализации данных в Redis", e);
         }
@@ -87,9 +90,11 @@ public class RedisCacheService {
     // Получение всех chatId с накопленными уведомлениями
     public List<Long> getAllChatIdsWithNotifications() {
         Set<String> keys = redisTemplate.keys("notification_batch:*");
-        return keys.stream()
-            .map(key -> Long.parseLong(key.replace("notification_batch:", "")))
-            .toList();
+        return Optional.of(keys)
+                .orElse(Collections.emptySet()) // Возвращаем пустой Set, если keys == null
+                .stream()
+                .map(key -> Long.parseLong(key.replace("notification_batch:", "")))
+                .toList();
     }
 
     public void clearAllNotificationData() {

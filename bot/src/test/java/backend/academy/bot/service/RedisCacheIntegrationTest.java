@@ -1,11 +1,16 @@
 package backend.academy.bot.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import backend.academy.bot.AbstractIntegrationTest;
 import backend.academy.bot.client.ScrapperClient;
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,17 +18,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import java.util.List;
-import static org.mockito.Mockito.verify;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 
 @Testcontainers
 @ActiveProfiles("test")
-@SpringBootTest(properties = {
-    "app.message-transport=HTTP"
-})
+@SpringBootTest(properties = {"app.message-transport=HTTP"})
 public class RedisCacheIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -41,15 +39,13 @@ public class RedisCacheIntegrationTest extends AbstractIntegrationTest {
     @Value("${app.message-transport}")
     private String messageTransport;
 
-
     @Test
     void shouldCacheLinksOnFirstRequest() throws Exception {
         // Arrange: Подготовка мока для получения данных из ScrapperClient
         long chatId = 1L;
         List<LinkResponse> links = List.of(
-            new LinkResponse(1L, "https://example.com", List.of("tag1"), List.of("filter1")),
-            new LinkResponse(2L, "https://example.org", List.of("tag2"), List.of("filter2"))
-        );
+                new LinkResponse(1L, "https://example.com", List.of("tag1"), List.of("filter1")),
+                new LinkResponse(2L, "https://example.org", List.of("tag2"), List.of("filter2")));
         ListLinksResponse response = new ListLinksResponse(links, links.size());
 
         if ("HTTP".equals(messageTransport)) {
@@ -81,21 +77,19 @@ public class RedisCacheIntegrationTest extends AbstractIntegrationTest {
     void shouldInvalidateCacheOnDataChange() throws Exception {
         // Arrange: Подготовка мока для получения данных из ScrapperClient
         long chatId = 1L;
-        List<LinkResponse> initialLinks = List.of(
-            new LinkResponse(1L, "https://example.com", List.of("tag1"), List.of("filter1"))
-        );
+        List<LinkResponse> initialLinks =
+                List.of(new LinkResponse(1L, "https://example.com", List.of("tag1"), List.of("filter1")));
         ListLinksResponse initialResponse = new ListLinksResponse(initialLinks, initialLinks.size());
 
         List<LinkResponse> updatedLinks = List.of(
-            new LinkResponse(1L, "https://example.com", List.of("tag1"), List.of("filter1")),
-            new LinkResponse(2L, "https://example.org", List.of("tag2"), List.of("filter2"))
-        );
+                new LinkResponse(1L, "https://example.com", List.of("tag1"), List.of("filter1")),
+                new LinkResponse(2L, "https://example.org", List.of("tag2"), List.of("filter2")));
         ListLinksResponse updatedResponse = new ListLinksResponse(updatedLinks, updatedLinks.size());
 
         if ("HTTP".equals(messageTransport)) {
             when(scrapperClient.getLinks(chatId))
-                .thenReturn(initialResponse) // Первый ответ
-                .thenReturn(updatedResponse); // Второй ответ после инвалидации
+                    .thenReturn(initialResponse) // Первый ответ
+                    .thenReturn(updatedResponse); // Второй ответ после инвалидации
         }
 
         // Act: Первый вызов getLinks

@@ -2,22 +2,21 @@ package backend.academy.bot;
 
 import com.redis.testcontainers.RedisContainer;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @SpringBootTest
 public abstract class AbstractIntegrationTest {
 
-    protected static final RedisContainer REDIS_CONTAINER = new RedisContainer(DockerImageName.parse("redis:6.2.6")).withExposedPorts(6379);
+    protected static final RedisContainer REDIS_CONTAINER =
+            new RedisContainer(DockerImageName.parse("redis:6.2.6")).withExposedPorts(6379);
 
-    protected static final KafkaContainer KAFKA_CONTAINER = new KafkaContainer("apache/kafka-native:3.8.1")
-        .withExposedPorts(9092);
+    protected static final KafkaContainer KAFKA_CONTAINER =
+            new KafkaContainer("apache/kafka-native:3.8.1").withExposedPorts(9092);
 
     static {
         REDIS_CONTAINER.start();

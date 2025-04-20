@@ -11,14 +11,14 @@ import backend.academy.model.KafkaResponse;
 import backend.academy.model.KafkaTagsResponse;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
@@ -43,13 +43,11 @@ public class KafkaCommunicationService implements CommunicationService {
         kafkaProducerService.sendChatDelete(chatId);
     }
 
-
     @Override
     public void addLink(long chatId, String link, List<String> tags, List<String> filters) {
         KafkaAddLinkRequest request = new KafkaAddLinkRequest(chatId, link, tags, filters);
         kafkaProducerService.sendLinkAdd(request);
         redisCacheService.invalidateCache(chatId);
-
     }
 
     @Override
@@ -136,14 +134,14 @@ public class KafkaCommunicationService implements CommunicationService {
         switch (response) {
             case KafkaTagsResponse tagsResponse -> {
                 CompletableFuture<List<String>> future =
-                    (CompletableFuture<List<String>>) pendingRequests.get(tagsResponse.correlationId());
+                        (CompletableFuture<List<String>>) pendingRequests.get(tagsResponse.correlationId());
                 if (future != null) {
                     future.complete(tagsResponse.tags());
                 }
             }
             case KafkaLinksResponse linksResponse -> {
                 CompletableFuture<ListLinksResponse> future =
-                    (CompletableFuture<ListLinksResponse>) pendingRequests.get(linksResponse.correlationId());
+                        (CompletableFuture<ListLinksResponse>) pendingRequests.get(linksResponse.correlationId());
                 if (future != null) {
                     List<LinkResponse> links = linksResponse.links();
                     ListLinksResponse listLinksResponse = new ListLinksResponse(links, links.size());

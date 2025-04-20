@@ -184,12 +184,13 @@ public class SqlLinkRepository implements LinkRepository {
 
     @Override
     public List<String> getFiltersForLink(long chatId, String url) {
-        String sql = """
+        String sql =
+                """
         SELECT f.value
         FROM filter f
         JOIN tracked_link tl ON f.link_id = tl.id
         WHERE tl.chat_id = ? AND tl.url = ?
     """;
-        return jdbcTemplate.query(sql, new Object[]{chatId, url}, (rs, rowNum) -> rs.getString("value"));
+        return jdbcTemplate.query(sql, new Object[] {chatId, url}, (rs, rowNum) -> rs.getString("value"));
     }
 }

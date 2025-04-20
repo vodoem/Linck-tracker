@@ -37,8 +37,8 @@ public class UpdateController {
                 } else {
                     // Сохраняем уведомление в Redis для дайджеста
                     String notification = "Обновление ссылки:\n"
-                        + "URL: " + linkUpdate.url() + "\n"
-                        + "Описание: " + linkUpdate.description();
+                            + "URL: " + linkUpdate.url() + "\n"
+                            + "Описание: " + linkUpdate.description();
                     redisCacheService.addNotificationToBatch(chatId, notification);
                 }
             }
@@ -52,9 +52,8 @@ public class UpdateController {
     private void sendNotification(Long chatId, LinkUpdate update) {
         // Отправка уведомлений в чаты
         if (update.tgChatIds() != null && !update.tgChatIds().isEmpty()) {
-            String message = "Обновление ссылки:\n"
-                + "URL: " + update.url() + "\n"
-                + "Описание: " + update.description();
+            String message =
+                    "Обновление ссылки:\n" + "URL: " + update.url() + "\n" + "Описание: " + update.description();
             telegramClient.sendMessage(chatId, message);
         } else {
             System.out.println("Нет chatId для отправки уведомления.");

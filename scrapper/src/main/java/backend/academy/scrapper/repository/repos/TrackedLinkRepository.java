@@ -22,9 +22,7 @@ public interface TrackedLinkRepository extends JpaRepository<TrackedLink, Long> 
 
     boolean existsByChatIdAndUrl(long chatId, String url);
 
-    @Query("SELECT f.value FROM TrackedLink tl " +
-        "JOIN tl.filters f " +
-        "WHERE tl.chat.id = :chatId AND tl.url = :url")
+    @Query("SELECT f.value FROM TrackedLink tl " + "JOIN tl.filters f "
+            + "WHERE tl.chat.id = :chatId AND tl.url = :url")
     List<String> getFiltersForLink(@Param("chatId") long chatId, @Param("url") String url);
-
 }

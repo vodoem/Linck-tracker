@@ -1,42 +1,27 @@
 package backend.academy.bot.kafka;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
 import backend.academy.bot.AbstractIntegrationTest;
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.bot.service.RedisCacheService;
-import backend.academy.model.LinkUpdate;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.consumer.Consumer;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.header.Header;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.TestInstance;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
-@Testcontainers
 @SpringBootTest
 @ActiveProfiles("test")
 public class KafkaDlqIntegrationTest extends AbstractIntegrationTest {
@@ -79,7 +64,8 @@ public class KafkaDlqIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldRedirectInvalidDataToDlq() throws Exception {
         // Arrange: Невалидные данные (отсутствует обязательное поле)
-        String invalidData = """
+        String invalidData =
+                """
             {
                 "url": "https://example.com",
                 "description": "Test update"

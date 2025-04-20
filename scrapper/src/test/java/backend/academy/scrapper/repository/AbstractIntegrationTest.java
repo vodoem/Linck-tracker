@@ -1,7 +1,6 @@
 package backend.academy.scrapper.repository;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -16,9 +15,9 @@ public abstract class AbstractIntegrationTest {
 
     @Container
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:13")
-        .withDatabaseName("scrapper")
-        .withUsername("postgres")
-        .withPassword("postgres");
+            .withDatabaseName("scrapper")
+            .withUsername("postgres")
+            .withPassword("postgres");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {

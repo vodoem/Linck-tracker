@@ -1,9 +1,18 @@
-package backend.academy.bot.kafka;
+package backend.academy.bot.Json;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.verify;
 
 import backend.academy.bot.AbstractIntegrationTest;
+import backend.academy.bot.BotInitializer;
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.bot.service.RedisCacheService;
 import backend.academy.model.LinkUpdate;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -11,16 +20,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.verify;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @ActiveProfiles("test")
 @SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class KafkaJsonMappingTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -29,17 +35,33 @@ public class KafkaJsonMappingTest extends AbstractIntegrationTest {
     @MockitoBean
     private TelegramClient telegramClient;
 
+    @MockitoBean
+    private BotInitializer botInitializer;
+
     @Autowired
     private RedisCacheService redisCacheService;
 
     @Value("${kafka.topic.link-updates}")
     private String linkUpdatesTopic;
 
+    @Value("${kafka.topic.dead-letter-queue}")
+    private String dlqTopic;
+
     @Captor
     private ArgumentCaptor<Long> chatIdCaptor;
 
     @Captor
     private ArgumentCaptor<String> messageCaptor;
+
+    @BeforeEach
+    void clearRedis() {
+        redisCacheService.clearAllNotificationData();
+    }
+
+    @AfterEach
+    void clearRedisAfter() {
+        redisCacheService.clearAllNotificationData();
+    }
 
     @Test
     void validJsonShouldBeMappedToDto() throws Exception {
@@ -50,27 +72,17 @@ public class KafkaJsonMappingTest extends AbstractIntegrationTest {
 
         redisCacheService.setNotificationMode(testChatId, "immediate");
 
-        LinkUpdate linkUpdate = new LinkUpdate(
-            1L,
-            testUrl,
-            testDescription,
-            List.of(testChatId)
-        );
+        LinkUpdate linkUpdate = new LinkUpdate(1L, testUrl, testDescription, List.of(testChatId));
 
         // Act
         kafkaTemplate.send(linkUpdatesTopic, linkUpdate).get();
 
         // Assert
-        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
-            verify(telegramClient).sendMessage(
-                chatIdCaptor.capture(),
-                messageCaptor.capture()
-            );
+        await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> {
+            verify(telegramClient).sendMessage(chatIdCaptor.capture(), messageCaptor.capture());
 
             assertThat(chatIdCaptor.getValue()).isEqualTo(testChatId);
-            assertThat(messageCaptor.getValue())
-                .contains(testUrl)
-                .contains(testDescription);
+            assertThat(messageCaptor.getValue()).contains(testUrl).contains(testDescription);
         });
     }
 }

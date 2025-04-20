@@ -3,9 +3,9 @@ package backend.academy.bot.service;
 import backend.academy.bot.client.ScrapperClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import java.util.List;
 
 @Service
 @ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP")
@@ -28,7 +28,6 @@ public class HttpCommunicationService implements CommunicationService {
     public void deleteChat(long chatId) {
         scrapperClient.deleteChat(chatId);
     }
-
 
     @Override
     public void addLink(long chatId, String link, List<String> tags, List<String> filters) {

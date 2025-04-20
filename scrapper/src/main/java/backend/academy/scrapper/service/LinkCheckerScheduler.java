@@ -2,7 +2,6 @@ package backend.academy.scrapper.service;
 
 import backend.academy.model.LinkResponse;
 import backend.academy.model.LinkUpdate;
-import backend.academy.scrapper.client.BotClient;
 import backend.academy.scrapper.repository.LinkRepository;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +35,8 @@ public class LinkCheckerScheduler {
         this.numThreads = numThreads;
     }
 
-    public LinkCheckerScheduler(LinkRepository linkRepository, CommunicationService communicationService, List<LinkChecker> linkCheckers) {
+    public LinkCheckerScheduler(
+            LinkRepository linkRepository, CommunicationService communicationService, List<LinkChecker> linkCheckers) {
         this.linkRepository = linkRepository;
         this.communicationService = communicationService;
 
@@ -134,8 +134,8 @@ public class LinkCheckerScheduler {
 
                 // Проверяем фильтры
                 boolean isFiltered = filters.stream()
-                    .filter(filter -> filter.startsWith("user:"))
-                    .anyMatch(filter -> filter.equals("user:" + author));
+                        .filter(filter -> filter.startsWith("user:"))
+                        .anyMatch(filter -> filter.equals("user:" + author));
 
                 if (isFiltered) {
                     System.out.println("Уведомление отфильтровано для автора: " + author);
@@ -164,6 +164,7 @@ public class LinkCheckerScheduler {
                 );
         communicationService.sendUpdate(update);
     }
+
     private String extractAuthor(String description) {
         Pattern pattern = Pattern.compile("Автор:\\s*(\\S+)");
         Matcher matcher = pattern.matcher(description);

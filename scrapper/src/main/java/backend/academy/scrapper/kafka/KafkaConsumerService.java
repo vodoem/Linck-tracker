@@ -1,27 +1,22 @@
 package backend.academy.scrapper.kafka;
 
 import backend.academy.model.AddLinkRequest;
-import backend.academy.model.AddTagsRequest;
 import backend.academy.model.GetLinksByTagRequest;
 import backend.academy.model.GetLinksRequest;
-import backend.academy.model.GetLinksResponse;
 import backend.academy.model.GetTagsForLinkRequest;
 import backend.academy.model.KafkaAddLinkRequest;
 import backend.academy.model.KafkaAddTagsRequest;
-import backend.academy.model.KafkaLinksResponse;
 import backend.academy.model.KafkaRemoveLinkRequest;
 import backend.academy.model.KafkaRemoveTagRequest;
-import backend.academy.model.KafkaTagsResponse;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.RemoveLinkRequest;
 import backend.academy.model.RemoveTagRequest;
 import backend.academy.scrapper.service.LinkService;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import java.util.List;
 
 @Service
 @ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
@@ -70,7 +65,8 @@ public class KafkaConsumerService {
         int offset = 0;
         int limit = batchSize; // Размер пакета из конфигурации
         // Получаем ссылки из сервиса
-        List<LinkResponse> links = linkService.getLinks(request.chatId(), offset, limit).links();
+        List<LinkResponse> links =
+                linkService.getLinks(request.chatId(), offset, limit).links();
 
         kafkaCommunicationService.handleGetLinksRequest(request, links);
     }
@@ -97,7 +93,8 @@ public class KafkaConsumerService {
     @KafkaListener(topics = "${kafka.topic.get-links-by-tag-request}", groupId = "scrapper-group")
     public void handleGetLinksByTagRequest(GetLinksByTagRequest request) {
         System.out.println("Получен запрос на получение ссылок по тегу: " + request);
-        List<LinkResponse> links = linkService.getLinksByTag(request.chatId(), request.tagName()).links();
+        List<LinkResponse> links =
+                linkService.getLinksByTag(request.chatId(), request.tagName()).links();
         kafkaCommunicationService.handleGetLinksByTagRequest(request, links);
     }
 }
