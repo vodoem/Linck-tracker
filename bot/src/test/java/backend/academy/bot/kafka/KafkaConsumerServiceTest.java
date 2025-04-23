@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.verify;
 
-import backend.academy.bot.AbstractIntegrationTest;
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.bot.service.RedisCacheService;
 import backend.academy.model.LinkUpdate;
+import com.redis.testcontainers.RedisContainer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -20,12 +20,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.kafka.KafkaContainer;
 
+@Testcontainers
 @ActiveProfiles("test")
 @SpringBootTest(properties = {"spring.kafka.consumer.auto-offset-reset=earliest", "app.message-transport=Kafka"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class KafkaConsumerServiceTest extends AbstractIntegrationTest {
+public class KafkaConsumerServiceTest {
 
     @Autowired
     private KafkaTemplate<String, LinkUpdate> kafkaTemplate;
@@ -38,6 +44,23 @@ public class KafkaConsumerServiceTest extends AbstractIntegrationTest {
 
     @Value("${kafka.topic.link-updates}")
     private String linkUpdatesTopic;
+
+    @Container
+    private static final KafkaContainer KAFKA_CONTAINER =
+            new KafkaContainer("apache/kafka-native:3.8.1").withExposedPorts(9092);
+
+    @Container
+    private static final RedisContainer REDIS_CONTAINER = new RedisContainer("redis:6.2.6").withExposedPorts(6379);
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        // Настройка Redis
+        registry.add("spring.data.redis.host", REDIS_CONTAINER::getHost);
+        registry.add("spring.data.redis.port", () -> REDIS_CONTAINER.getMappedPort(6379));
+
+        // Настройка Kafka
+        registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
+    }
 
     @BeforeEach
     void clearRedisNotificationData() {
