@@ -43,12 +43,13 @@ public class KafkaConsumerServiceTest extends AbstractIntegrationTest {
     void clearRedisNotificationData() {
         // Очищаем все данные связанные с уведомлениями
         redisCacheService.clearAllNotificationData();
+        redisCacheService.clearAllRedisKeys();
     }
 
     @AfterEach
     void clearRedisNotificationDataAfterTest() {
         // Очищаем все данные связанные с уведомлениями
-        redisCacheService.clearAllNotificationData();
+        clearRedisNotificationData();
     }
 
     @Test

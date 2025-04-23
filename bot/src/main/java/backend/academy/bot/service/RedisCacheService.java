@@ -4,6 +4,7 @@ import backend.academy.model.ListLinksResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -103,5 +104,11 @@ public class RedisCacheService {
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
+    }
+
+    public void clearAllRedisKeys() {
+        Objects.requireNonNull(redisTemplate.getConnectionFactory())
+                .getConnection()
+                .flushAll();
     }
 }
