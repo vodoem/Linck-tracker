@@ -2,7 +2,6 @@ package backend.academy.scrapper.service;
 
 import backend.academy.model.LinkResponse;
 import backend.academy.model.LinkUpdate;
-import backend.academy.scrapper.client.BotClient;
 import backend.academy.scrapper.repository.LinkRepository;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +9,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class LinkCheckerScheduler {
     private final LinkRepository linkRepository;
-    private final BotClient botClient;
+    private final CommunicationService communicationService;
     private Map<String, LinkChecker> linkCheckers; // Карта для хранения стратегий
     private int batchSize;
     private int numThreads;
@@ -34,9 +35,10 @@ public class LinkCheckerScheduler {
         this.numThreads = numThreads;
     }
 
-    public LinkCheckerScheduler(LinkRepository linkRepository, BotClient botClient, List<LinkChecker> linkCheckers) {
+    public LinkCheckerScheduler(
+            LinkRepository linkRepository, CommunicationService communicationService, List<LinkChecker> linkCheckers) {
         this.linkRepository = linkRepository;
-        this.botClient = botClient;
+        this.communicationService = communicationService;
 
         // Инициализация карты стратегий
         this.linkCheckers = (linkCheckers != null)
@@ -120,6 +122,27 @@ public class LinkCheckerScheduler {
 
             if (checker != null && checker.checkForUpdates(link)) {
                 String description = checker.getUpdateDescription(link);
+
+                // Извлекаем автора из описания
+                String author = extractAuthor(description);
+                if (author == null) {
+                    continue; // Пропускаем, если автор не найден
+                }
+
+                // Получаем фильтры для ссылки
+                List<String> filters = linkRepository.getFiltersForLink(chatId, link);
+
+                // Проверяем фильтры
+                boolean isFiltered = filters.stream()
+                        .filter(filter -> filter.startsWith("user:"))
+                        .anyMatch(filter -> filter.equals("user:" + author));
+
+                if (isFiltered) {
+                    System.out.println("Уведомление отфильтровано для автора: " + author);
+                    continue; // Пропускаем уведомление
+                }
+
+                // Отправляем уведомление
                 sendUpdate(chatId, link, description);
             }
         }
@@ -139,6 +162,15 @@ public class LinkCheckerScheduler {
         LinkUpdate update = new LinkUpdate(
                 chatId, link, description, List.of(chatId) // Отправляем уведомление только этому чату
                 );
-        botClient.sendUpdate(update);
+        communicationService.sendUpdate(update);
+    }
+
+    private String extractAuthor(String description) {
+        Pattern pattern = Pattern.compile("Автор:\\s*(\\S+)");
+        Matcher matcher = pattern.matcher(description);
+        if (matcher.find()) {
+            return matcher.group(1); // Возвращает имя автора
+        }
+        return null; // Если автор не найден
     }
 }

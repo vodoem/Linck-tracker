@@ -181,4 +181,16 @@ public class SqlLinkRepository implements LinkRepository {
                 "SELECT COUNT(*) FROM tracked_link WHERE url = ? AND chat_id = ?", Integer.class, url, chatId);
         return count != null && count > 0;
     }
+
+    @Override
+    public List<String> getFiltersForLink(long chatId, String url) {
+        String sql =
+                """
+        SELECT f.value
+        FROM filter f
+        JOIN tracked_link tl ON f.link_id = tl.id
+        WHERE tl.chat_id = ? AND tl.url = ?
+    """;
+        return jdbcTemplate.query(sql, new Object[] {chatId, url}, (rs, rowNum) -> rs.getString("value"));
+    }
 }

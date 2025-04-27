@@ -1,5 +1,7 @@
 app:
   telegram-token: ${TELEGRAM_TOKEN} # env variable
+  message-transport: Kafka # Kafka или HTTP
+  digest: "0 0 10 * * ?" # Каждый день в 10:00
 
 spring:
   application:
@@ -10,6 +12,29 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  cache:
+    type: redis
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: bot-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: "backend.academy.model"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      missing-topics-fatal: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 server:
   port: 8080
@@ -18,3 +43,30 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui
+
+kafka:
+  topic:
+    chat-register: chat-register
+    chat-delete: chat-delete
+    link-add: link-add
+    link-remove: link-remove
+    link-updates: link-updates
+    get-links-request: get-links-request
+    response-topic: kafka-response-topic
+    add-tags-request: add-tags-request
+    remove-tag-request: remove-tag-request
+    get-tags-for-link-request: get-tags-for-link-request
+    get-links-by-tag-request: get-links-by-tag-request
+    dead-letter-queue: dlq-updates
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  kafka:
+    bootstrap-servers: localhost:9092
+  data:
+    redis:
+      port: 6379
+      host: localhost

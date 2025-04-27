@@ -16,25 +16,37 @@ services:
       timeout: 5s
       retries: 10
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
 
-#  liquibase-migrations:
-#    container_name: migrations
-#    image: liquibase/liquibase:4.29
-#    depends_on:
-#      - postgres
-#    command:
-#      - --searchPath=/changesets
-#      - --changelog-file=master.xml
-#      - --driver=org.postgresql.Driver
-#      - --url=jdbc:postgresql://postgres:5432/scrapper
-#      - --username=postgres
-#      - --password=postgres
-#      - update
-#    volumes:
-#      - ./migrations:/changesets
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
 
 volumes:
   postgres_data:
+  redis_data:

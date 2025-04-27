@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 public class BotServiceTest {
-    private final BotService botService = new BotService(null, null);
+    private final BotService botService = new BotService(null, null, null, null);
 
     @Test
     void testValidUrl() {

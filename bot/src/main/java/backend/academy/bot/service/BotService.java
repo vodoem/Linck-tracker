@@ -1,6 +1,6 @@
 package backend.academy.bot.service;
 
-import backend.academy.bot.client.ScrapperClient;
+import backend.academy.bot.client.TelegramClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import java.util.Arrays;
@@ -8,18 +8,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
 public class BotService {
-    private final ScrapperClient scrapperClient;
+    private final CommunicationService communicationService;
     private final BotStateMachine botStateMachine;
+    private final RedisCacheService redisCacheService;
+    private final TelegramClient telegramClient;
     private static final Pattern URL_PATTERN =
             Pattern.compile("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$", Pattern.CASE_INSENSITIVE);
 
-    public BotService(ScrapperClient scrapperClient, BotStateMachine botStateMachine) {
-        this.scrapperClient = scrapperClient;
+    public BotService(
+            CommunicationService communicationService,
+            BotStateMachine botStateMachine,
+            RedisCacheService redisCacheService,
+            TelegramClient telegramClient) {
+        this.communicationService = communicationService;
         this.botStateMachine = botStateMachine;
+        this.redisCacheService = redisCacheService;
+        this.telegramClient = telegramClient;
     }
     // Обработка команд
     public String handleCommand(String command, long chatId) {
@@ -29,7 +38,8 @@ public class BotService {
         }
         switch (command) {
             case "/start":
-                scrapperClient.registerChat(chatId);
+                communicationService.registerChat(chatId);
+                redisCacheService.setNotificationMode(chatId, "immediate");
                 return "Добро пожаловать! Используйте /help для просмотра доступных команд.";
             case "/help":
                 return """
@@ -42,6 +52,8 @@ public class BotService {
                     /removetag <url> <tag> — удалить тег из ссылки.
                     /listtags <url> — показать все теги для ссылки.
                     /filterbytag <tag> — показать только ссылки с указанным тегом.
+                    /settings - показать настройки уведомлений
+                    /setmode <immediate|digest> - выбрать режим уведомлений
                     """;
             case "/track":
                 botStateMachine.setState(chatId, "waiting_for_link");
@@ -50,7 +62,7 @@ public class BotService {
                 botStateMachine.setState(chatId, "waiting_for_untrack_link");
                 return "Введите ссылку для удаления.";
             case "/list":
-                ListLinksResponse linksResponse = scrapperClient.getLinks(chatId);
+                ListLinksResponse linksResponse = communicationService.getLinks(chatId);
                 if (linksResponse.links().isEmpty()) {
                     return "У вас нет отслеживаемых ссылок.";
                 }
@@ -68,6 +80,17 @@ public class BotService {
             case "/filterbytag":
                 botStateMachine.setState(chatId, "waiting_for_filterbytag");
                 return "Введите имя тега для фильтрации ссылок.";
+            case "/settings":
+                String mode = redisCacheService.getNotificationMode(chatId);
+                return "Текущий режим уведомлений: " + (mode != null ? mode : "сразу");
+
+            case "/setmode immediate":
+                redisCacheService.setNotificationMode(chatId, "immediate");
+                return "Режим уведомлений установлен: сразу.";
+
+            case "/setmode digest":
+                redisCacheService.setNotificationMode(chatId, "digest");
+                return "Режим уведомлений установлен: дайджест раз в сутки.";
             default:
                 return "Неизвестная команда. Используйте /help для просмотра доступных команд.";
         }
@@ -84,7 +107,7 @@ public class BotService {
                 }
 
                 // Получаем текущие ссылки для чата
-                ListLinksResponse linksResponse = scrapperClient.getLinks(chatId);
+                ListLinksResponse linksResponse = communicationService.getLinks(chatId);
                 boolean isLinkAlreadyTracked = linksResponse.links().stream()
                         .anyMatch(link -> link.url().equals(message));
 
@@ -120,11 +143,11 @@ public class BotService {
                 List<String> pendingTags = botStateMachine.getPendingTags(chatId);
                 List<String> pendingFilters = botStateMachine.getPendingFilters(chatId);
 
-                scrapperClient.addLink(chatId, link, pendingTags, pendingFilters);
+                communicationService.addLink(chatId, link, pendingTags, pendingFilters);
                 botStateMachine.clearState(chatId);
                 return "Ссылка успешно добавлена с тэгами: " + pendingTags + " и фильтрами: " + pendingFilters;
             case "waiting_for_untrack_link":
-                scrapperClient.removeLink(chatId, message);
+                communicationService.removeLink(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Ссылка удалена из отслеживания.";
 
@@ -132,7 +155,7 @@ public class BotService {
                 String[] parts = message.split(" ");
                 String url = parts[0];
                 List<String> tagsForUrl = Arrays.asList(Arrays.copyOfRange(parts, 1, parts.length));
-                scrapperClient.addTags(chatId, url, tagsForUrl);
+                communicationService.addTags(chatId, url, tagsForUrl);
                 botStateMachine.clearState(chatId);
                 return "Теги успешно добавлены.";
 
@@ -140,23 +163,47 @@ public class BotService {
                 String[] removeParts = message.split(" ");
                 String removeUrl = removeParts[0];
                 String tagName = removeParts[1];
-                scrapperClient.removeTag(chatId, removeUrl, tagName);
+                communicationService.removeTag(chatId, removeUrl, tagName);
                 botStateMachine.clearState(chatId);
                 return "Тег успешно удален.";
 
             case "waiting_for_listtags":
-                List<String> tagsList = scrapperClient.getTagsForLink(chatId, message);
+                List<String> tagsList = communicationService.getTagsForLink(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Теги для ссылки: " + String.join(", ", tagsList);
 
             case "waiting_for_filterbytag":
-                List<LinkResponse> filteredLinks = scrapperClient.getLinksByTag(chatId, message);
+                List<LinkResponse> filteredLinks = communicationService.getLinksByTag(chatId, message);
                 botStateMachine.clearState(chatId);
                 return "Ссылки с тегом '" + message + "':\n"
                         + filteredLinks.stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
 
             default:
                 return "Неизвестное сообщение. Используйте /help для просмотра доступных команд.";
+        }
+    }
+
+    @Scheduled(cron = "${app.digest}") // Например, "0 0 10 * * ?" (каждый день в 10:00)
+    public void sendDailyDigest() {
+        List<Long> chatIds = redisCacheService.getAllChatIdsWithNotifications();
+
+        for (long chatId : chatIds) {
+            String mode = redisCacheService.getNotificationMode(chatId);
+            if (!"digest".equals(mode)) {
+                continue; // Пропускаем чаты, которые не выбрали режим дайджеста
+            }
+
+            List<String> notifications = redisCacheService.getNotificationsFromBatch(chatId);
+            if (notifications.isEmpty()) {
+                continue; // Нет уведомлений для отправки
+            }
+
+            // Формируем дайджест
+            String digestMessage = "Дайджест обновлений:\n" + String.join("\n\n", notifications);
+            telegramClient.sendMessage(chatId, digestMessage);
+
+            // Очищаем батч
+            redisCacheService.clearNotificationBatch(chatId);
         }
     }
 
