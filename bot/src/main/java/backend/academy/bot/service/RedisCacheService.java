@@ -91,7 +91,7 @@ public class RedisCacheService {
     // Получение всех chatId с накопленными уведомлениями
     public List<Long> getAllChatIdsWithNotifications() {
         Set<String> keys = redisTemplate.keys("notification_batch:*");
-        return Optional.of(keys)
+        return Optional.ofNullable(keys)
                 .orElse(Collections.emptySet()) // Возвращаем пустой Set, если keys == null
                 .stream()
                 .map(key -> Long.parseLong(key.replace("notification_batch:", "")))
