@@ -22,7 +22,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest
+@SpringBootTest(properties = {"app.message-transport=Kafka"})
 @ActiveProfiles("test")
 public class KafkaDlqIntegrationTest extends AbstractIntegrationTest {
 

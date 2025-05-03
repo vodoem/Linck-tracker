@@ -25,7 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @ActiveProfiles("test")
-@SpringBootTest
+@SpringBootTest(properties = {"app.message-transport=Kafka"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class KafkaJsonMappingTest extends AbstractIntegrationTest {
 

@@ -5,9 +5,11 @@ import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import backend.academy.model.RemoveLinkRequest;
 import backend.academy.scrapper.service.LinkService;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +32,7 @@ public class LinkController {
     }
 
     @GetMapping
+    @RateLimiter(name = "linkControllerRateLimiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<ListLinksResponse> getLinks(@RequestHeader("Tg-Chat-Id") long chatId) {
         System.out.println("Получение ссылок для чата: " + chatId);
 
@@ -63,6 +66,7 @@ public class LinkController {
     }
 
     @PostMapping
+    @RateLimiter(name = "linkControllerRateLimiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<LinkResponse> addLink(
             @RequestHeader("Tg-Chat-Id") long chatId, @RequestBody AddLinkRequest request) {
         System.out.println("Добавление ссылки для чата: " + chatId + ", ссылка: " + request.link());
@@ -76,6 +80,7 @@ public class LinkController {
     }
 
     @DeleteMapping
+    @RateLimiter(name = "linkControllerRateLimiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<Void> removeLink(
             @RequestHeader("Tg-Chat-Id") long chatId, @RequestBody RemoveLinkRequest request) {
         System.out.println("Удаление ссылки для чата: " + chatId + ", ссылка: " + request.link());
@@ -85,5 +90,11 @@ public class LinkController {
 
         // Возвращаем успешный ответ
         return ResponseEntity.ok().build();
+    }
+
+    // Fallback метод
+    public ResponseEntity<String> rateLimitFallback(Throwable t) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body("Слишком много запросов. Пожалуйста, попробуйте позже.");
     }
 }

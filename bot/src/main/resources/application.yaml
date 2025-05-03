@@ -1,6 +1,6 @@
 app:
   telegram-token: ${TELEGRAM_TOKEN} # env variable
-  message-transport: Kafka # Kafka или HTTP
+  message-transport: HTTP # Kafka или HTTP
   digest: "0 0 10 * * ?" # Каждый день в 10:00
 
 spring:
@@ -38,6 +38,32 @@ spring:
 
 server:
   port: 8080
+
+resilience4j.ratelimiter:
+  instances:
+    updateControllerRateLimiter:
+      limitForPeriod: 10 # Максимальное количество запросов за период
+      limitRefreshPeriod: 1s # Период обновления лимита
+      timeoutDuration: 0 # Таймаут, если лимит исчерпан
+
+http:
+  timeout:
+    connect: 5000 # Таймаут подключения в миллисекундах
+    read: 5000    # Таймаут чтения в миллисекундах
+  retry:
+    max-attempts: 3                   # Максимальное количество попыток (включая первую)
+    backoff-ms: 1000                  # Задержка между попытками (в миллисекундах)
+    retryable-status-codes: 500,502,503,504
+
+resilience4j.circuitbreaker:
+  instances:
+    scrapperClient: # Имя инстанса CB
+      slidingWindowSize: 3            # Размер окна для расчета статистики ошибок
+      failureRateThreshold: 50        # Порог ошибок (в процентах), при котором CB переходит в OPEN
+      waitDurationInOpenState: 5s     # Время, в течение которого CB остается в состоянии OPEN
+      automaticTransitionFromOpenToHalfOpenEnabled: true # Автоматический переход из OPEN в HALF_OPEN
+      recordExceptions: org.springframework.web.client.HttpServerErrorException # Только 5xx
+      ignoreExceptions: org.springframework.web.client.HttpClientErrorException # Игнорировать 4xx
 
 springdoc:
   swagger-ui:
