@@ -8,6 +8,9 @@ import static org.mockito.Mockito.when;
 import backend.academy.bot.AbstractIntegrationTest;
 import backend.academy.bot.client.ScrapperClient;
 import backend.academy.bot.client.TelegramClient;
+import backend.academy.bot.fallback.TransportHealthChecker;
+import backend.academy.bot.fallback.TransportHealthMonitor;
+import backend.academy.bot.fallback.TransportManager;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import java.util.List;
@@ -35,6 +38,15 @@ public class RedisCacheIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private TelegramClient telegramClient;
+
+    @MockitoBean
+    private TransportHealthChecker healthChecker;
+
+    @MockitoBean
+    private TransportHealthMonitor healthMonitor;
+
+    @MockitoBean
+    private TransportManager transportManager;
 
     @Value("${app.message-transport}")
     private String messageTransport;

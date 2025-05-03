@@ -2,11 +2,10 @@ package backend.academy.scrapper.service;
 
 import backend.academy.model.LinkUpdate;
 import backend.academy.scrapper.client.BotClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP")
+// @ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP")
 public class HttpCommunicationService implements CommunicationService {
 
     private final BotClient botClient;

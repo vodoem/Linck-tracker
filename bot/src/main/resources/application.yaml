@@ -84,6 +84,7 @@ kafka:
     get-tags-for-link-request: get-tags-for-link-request
     get-links-by-tag-request: get-links-by-tag-request
     dead-letter-queue: dlq-updates
+    health-check-topic: health-check-topic
 
 ---
 spring:

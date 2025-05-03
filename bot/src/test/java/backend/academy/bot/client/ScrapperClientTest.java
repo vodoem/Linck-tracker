@@ -32,7 +32,7 @@ public class ScrapperClientTest {
 
     @Test
     void shouldRetryOnRetryableCodes() {
-        // Настройка WireMock для возврата ошибки 500 два раза, затем успешного ответа
+        // Arrange
         stubFor(post(urlEqualTo("/tg-chat/12345"))
                 .willReturn(aResponse().withStatus(500))
                 .inScenario("Retry Scenario")
@@ -50,44 +50,42 @@ public class ScrapperClientTest {
                 .inScenario("Retry Scenario")
                 .whenScenarioStateIs("Second Attempt"));
 
-        // Вызов метода с Retry
+        // Act
         scrapperClient.registerChat(12345L);
 
-        // Проверка, что запрос был выполнен трижды
+        // Assert
         verify(exactly(3), postRequestedFor(urlEqualTo("/tg-chat/12345")));
     }
 
     @Test
     void shouldNotRetryOnNonRetryableCodes() {
-        // Настройка WireMock для возврата ошибки 404
+        // Arrange
         stubFor(post(urlEqualTo("/tg-chat/123456")).willReturn(aResponse().withStatus(404)));
 
-        // Вызов метода с Retry
+        // Act
         HttpClientErrorException exception = assertThrows(HttpClientErrorException.class, () -> {
             scrapperClient.registerChat(123456L);
         });
 
+        // Assert
         assertEquals(404, exception.getStatusCode().value());
-
-        // Проверка, что запрос был выполнен только один раз
         verify(exactly(1), postRequestedFor(urlEqualTo("/tg-chat/123456")));
     }
 
     @Test
     void shouldOpenCircuitBreakerAfterFailures() {
-        // Настройка WireMock для возврата ошибки 500 трижды
+        // Arrange
         stubFor(post(urlEqualTo("/tg-chat/1234567")).willReturn(aResponse().withStatus(500)));
 
-        // Первые два вызова приводят к ошибкам
+        // Act
         RuntimeException exception1 = assertThrows(RuntimeException.class, () -> {
             scrapperClient.registerChat(1234567L);
         });
-
-        // Третий вызов также завершается ошибкой, CB переходит в OPEN
         RuntimeException cbException = assertThrows(RuntimeException.class, () -> {
             scrapperClient.registerChat(1234567L);
         });
 
+        // Assert
         assertTrue(cbException.getMessage().contains("Сервис временно недоступен."));
     }
 }

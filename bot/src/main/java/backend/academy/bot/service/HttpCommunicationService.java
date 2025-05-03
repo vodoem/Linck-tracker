@@ -4,11 +4,10 @@ import backend.academy.bot.client.ScrapperClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP")
+// @ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP")
 public class HttpCommunicationService implements CommunicationService {
 
     private final ScrapperClient scrapperClient;

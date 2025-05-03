@@ -24,20 +24,17 @@ public class RateLimitingIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldReturn429WhenRateLimitExceeded() throws Exception {
+        // Arrange
         String endpoint = "/links"; // URL эндпоинта в Scrapper
         long chatId = 12345L; // Пример ID чата
-
-        // Настройка заголовков
         HttpHeaders headers = new HttpHeaders();
         headers.set("Tg-Chat-Id", String.valueOf(chatId));
 
-        // Отправляем запросы до превышения лимита
+        // Act-Assert
         for (int i = 0; i < maxRequestsPerMinute; i++) {
             mockMvc.perform(MockMvcRequestBuilders.get(endpoint).headers(headers))
                     .andExpect(status().isOk());
         }
-
-        // Отправляем еще один запрос, который должен вернуть 429
         mockMvc.perform(MockMvcRequestBuilders.get(endpoint).headers(headers)).andExpect(status().isTooManyRequests());
     }
 }
