@@ -1,5 +1,6 @@
 package backend.academy.bot.client;
 
+import backend.academy.bot.BotInitializer;
 import backend.academy.bot.annotations.HttpRetryable;
 import backend.academy.model.AddLinkRequest;
 import backend.academy.model.AddTagsRequest;
@@ -11,6 +12,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -27,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class ScrapperClient {
 
+    private static final Logger logger = LoggerFactory.getLogger(ScrapperClient.class);
     private final RestTemplate restTemplate;
     private final String baseUrl;
 
@@ -214,7 +218,7 @@ public class ScrapperClient {
         if (t instanceof HttpClientErrorException e) {
             throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
         } else {
-            System.err.println("Circuit Breaker: Регистрация чата недоступна. Chat ID: " + chatId);
+            logger.error("Circuit Breaker: Регистрация чата недоступна. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
         }
     }
@@ -223,7 +227,7 @@ public class ScrapperClient {
         if (t instanceof HttpClientErrorException e) {
             throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
         } else {
-            System.err.println("Circuit Breaker: Удаление чата недоступно. Chat ID: " + chatId);
+            logger.error("Circuit Breaker: Удаление чата недоступно. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
         }
     }
@@ -232,7 +236,7 @@ public class ScrapperClient {
         if (t instanceof HttpClientErrorException e) {
             throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
         } else {
-            System.err.println("Circuit Breaker: Добавление ссылки недоступно. Chat ID: " + chatId);
+            logger.error("Circuit Breaker: Добавление ссылки недоступно. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
         }
     }
@@ -241,7 +245,7 @@ public class ScrapperClient {
         if (t instanceof HttpClientErrorException e) {
             throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
         } else {
-            System.err.println("Circuit Breaker: Удаление ссылки недоступно. Chat ID: " + chatId);
+            logger.error("Circuit Breaker: Удаление ссылки недоступно. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
         }
     }
@@ -250,7 +254,7 @@ public class ScrapperClient {
         if (t instanceof HttpClientErrorException e) {
             throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
         } else {
-            System.err.println("Circuit Breaker: Получение ссылок недоступно. Chat ID: " + chatId);
+            logger.error("Circuit Breaker: Получение ссылок недоступно. Chat ID: {}", chatId);
             return new ListLinksResponse(Collections.emptyList(), 0);
         }
     }
