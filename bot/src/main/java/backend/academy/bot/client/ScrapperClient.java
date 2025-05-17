@@ -1,6 +1,5 @@
 package backend.academy.bot.client;
 
-import backend.academy.bot.BotInitializer;
 import backend.academy.bot.annotations.HttpRetryable;
 import backend.academy.model.AddLinkRequest;
 import backend.academy.model.AddTagsRequest;
