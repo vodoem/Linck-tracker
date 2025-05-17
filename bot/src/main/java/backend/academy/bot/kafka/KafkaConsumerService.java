@@ -5,12 +5,11 @@ import backend.academy.bot.service.RedisCacheService;
 import backend.academy.model.KafkaResponse;
 import backend.academy.model.LinkUpdate;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
+// @ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
 public class KafkaConsumerService {
 
     private final TelegramClient telegramClient;

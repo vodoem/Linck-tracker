@@ -14,12 +14,11 @@ import backend.academy.model.RemoveTagRequest;
 import backend.academy.scrapper.service.LinkService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
+// @ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
 public class KafkaConsumerService {
 
     private final LinkService linkService;

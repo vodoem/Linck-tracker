@@ -9,11 +9,10 @@ import backend.academy.model.LinkResponse;
 import backend.academy.model.LinkUpdate;
 import backend.academy.scrapper.service.CommunicationService;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
+// @ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
 public class KafkaCommunicationService implements CommunicationService {
 
     private final KafkaProducerService kafkaProducerService;

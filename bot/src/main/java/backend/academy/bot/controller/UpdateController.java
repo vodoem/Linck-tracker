@@ -3,7 +3,9 @@ package backend.academy.bot.controller;
 import backend.academy.bot.client.TelegramClient;
 import backend.academy.bot.service.RedisCacheService;
 import backend.academy.model.LinkUpdate;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,6 +25,7 @@ public class UpdateController {
     }
 
     @PostMapping
+    @RateLimiter(name = "updateControllerRateLimiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<Void> handleUpdate(@RequestBody @Valid LinkUpdate linkUpdate) {
         // Логика обработки обновления
         System.out.println("Получено обновление: " + linkUpdate);
@@ -58,5 +61,11 @@ public class UpdateController {
         } else {
             System.out.println("Нет chatId для отправки уведомления.");
         }
+    }
+
+    // Fallback метод
+    public ResponseEntity<String> rateLimitFallback(Throwable t) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body("Слишком много запросов. Пожалуйста, попробуйте позже.");
     }
 }

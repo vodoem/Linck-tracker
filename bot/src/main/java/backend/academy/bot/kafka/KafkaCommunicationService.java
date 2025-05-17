@@ -17,11 +17,10 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
+// @ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
 public class KafkaCommunicationService implements CommunicationService {
 
     private final KafkaProducerService kafkaProducerService;
