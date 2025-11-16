@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import backend.academy.bot.BotInitializer;
+import backend.academy.bot.exception.ChatAlreadyRegisteredException;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,5 +88,23 @@ public class ScrapperClientTest {
 
         // Assert
         assertTrue(cbException.getMessage().contains("Сервис временно недоступен."));
+    }
+
+    @Test
+    void shouldConvertDuplicateRegistrationIntoDomainException() {
+        // Arrange
+        String body = """
+                {
+                  "description":"Чат уже зарегистрирован",
+                  "code":"401",
+                  "exceptionName":"backend.academy.scrapper.exception.ChatAlreadyExists",
+                  "exceptionMessage":"Чат 42 уже зарегистрирован",
+                  "stacktrace":[]
+                }
+                """;
+        stubFor(post(urlEqualTo("/tg-chat/42")).willReturn(aResponse().withStatus(401).withBody(body)));
+
+        // Act & Assert
+        assertThrows(ChatAlreadyRegisteredException.class, () -> scrapperClient.registerChat(42));
     }
 }

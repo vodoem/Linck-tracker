@@ -1,6 +1,7 @@
 package backend.academy.bot.service;
 
 import backend.academy.bot.client.TelegramClient;
+import backend.academy.bot.exception.ChatAlreadyRegisteredException;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import java.util.Arrays;
@@ -38,9 +39,13 @@ public class BotService {
         }
         switch (command) {
             case "/start":
-                communicationService.registerChat(chatId);
-                redisCacheService.setNotificationMode(chatId, "immediate");
-                return "Добро пожаловать! Используйте /help для просмотра доступных команд.";
+                try {
+                    communicationService.registerChat(chatId);
+                    redisCacheService.setNotificationMode(chatId, "immediate");
+                    return "Добро пожаловать! Используйте /help для просмотра доступных команд.";
+                } catch (ChatAlreadyRegisteredException e) {
+                    return "Этот чат уже зарегистрирован. Используйте /help для просмотра доступных команд.";
+                }
             case "/help":
                 return """
                     Доступные команды:
