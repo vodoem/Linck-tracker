@@ -273,22 +273,26 @@ public class ScrapperClient {
         }
     }
 
-    public void addLinkFallback(long chatId, Throwable t) {
+    public void addLinkFallback(long chatId, String link, List<String> tags, List<String> filters, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
             throw e;
-        } else {
-            logger.error("Circuit Breaker: Добавление ссылки недоступно. Chat ID: {}", chatId);
-            throw new RuntimeException("Сервис временно недоступен.");
         }
+        logger.error(
+                "Circuit Breaker: Добавление ссылки недоступно. Chat ID: {}, URL: {}",
+                chatId,
+                link);
+        throw new RuntimeException("Сервис временно недоступен.");
     }
 
-    public void removeLinkFallback(long chatId, Throwable t) {
+    public void removeLinkFallback(long chatId, String link, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
             throw e;
-        } else {
-            logger.error("Circuit Breaker: Удаление ссылки недоступно. Chat ID: {}", chatId);
-            throw new RuntimeException("Сервис временно недоступен.");
         }
+        logger.error(
+                "Circuit Breaker: Удаление ссылки недоступно. Chat ID: {}, URL: {}",
+                chatId,
+                link);
+        throw new RuntimeException("Сервис временно недоступен.");
     }
 
     public ListLinksResponse getLinksFallback(long chatId, Throwable t) {
