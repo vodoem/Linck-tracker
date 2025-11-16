@@ -71,4 +71,12 @@ public class HttpLinkRepository implements LinkRepository {
     public List<String> getFiltersForLink(long chatId, String url) {
         return List.of();
     }
+
+    @Override
+    public List<Long> getChatIdsByUrl(String url) {
+        return chatLinks.entrySet().stream()
+                .filter(entry -> entry.getValue().stream().anyMatch(link -> link.url().equals(url)))
+                .map(Map.Entry::getKey)
+                .toList();
+    }
 }

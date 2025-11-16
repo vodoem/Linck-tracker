@@ -25,4 +25,7 @@ public interface TrackedLinkRepository extends JpaRepository<TrackedLink, Long> 
     @Query("SELECT f.value FROM TrackedLink tl " + "JOIN tl.filters f "
             + "WHERE tl.chat.id = :chatId AND tl.url = :url")
     List<String> getFiltersForLink(@Param("chatId") long chatId, @Param("url") String url);
+
+    @Query("SELECT DISTINCT tl.chat.id FROM TrackedLink tl WHERE tl.url = :url")
+    List<Long> findChatIdsByUrl(@Param("url") String url);
 }

@@ -158,12 +158,6 @@
         </dependency>
         <dependency>
             <groupId>backend.academy</groupId>
-            <artifactId>bot</artifactId>
-            <version>1.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>backend.academy</groupId>
             <artifactId>models</artifactId>
             <version>1.0</version>
             <scope>compile</scope>

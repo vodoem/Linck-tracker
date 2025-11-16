@@ -1,6 +1,9 @@
 package backend.academy.bot.client;
 
 import backend.academy.bot.annotations.HttpRetryable;
+import backend.academy.bot.exception.ChatAlreadyRegisteredException;
+import backend.academy.model.ApiErrorResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import backend.academy.model.AddLinkRequest;
 import backend.academy.model.AddTagsRequest;
 import backend.academy.model.LinkResponse;
@@ -31,13 +34,15 @@ public class ScrapperClient {
 
     private static final Logger logger = LoggerFactory.getLogger(ScrapperClient.class);
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     private final String baseUrl;
 
     @Value("${http.retry.retryable-status-codes}")
     private Set<Integer> retryableStatusCodes;
 
-    public ScrapperClient(RestTemplate restTemplate) {
+    public ScrapperClient(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
         this.baseUrl = "http://localhost:8081";
     }
 
@@ -52,8 +57,11 @@ public class ScrapperClient {
                 throw e; // Будет повтор
             }
         } catch (HttpClientErrorException e) {
+            if (isChatAlreadyRegistered(e)) {
+                throw new ChatAlreadyRegisteredException("Чат уже зарегистрирован", e);
+            }
             // 4xx ошибки (ни Retry, ни Circuit Breaker)
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         }
     }
 
@@ -214,44 +222,82 @@ public class ScrapperClient {
     }
 
     public void registerChatFallback(long chatId, Throwable t) {
-        if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+        if (t instanceof ChatAlreadyRegisteredException e) {
+            throw e;
+        } else if (t instanceof HttpClientErrorException e) {
+            throw e;
         } else {
             logger.error("Circuit Breaker: Регистрация чата недоступна. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
         }
     }
 
+    private boolean isChatAlreadyRegistered(HttpClientErrorException exception) {
+        HttpStatusCode statusCode = exception.getStatusCode();
+        if (!isPotentialAlreadyRegisteredStatus(statusCode)) {
+            return false;
+        }
+
+        String responseBody = exception.getResponseBodyAsString();
+        if (responseBody == null || responseBody.isBlank()) {
+            return false;
+        }
+        try {
+            ApiErrorResponse response = objectMapper.readValue(responseBody, ApiErrorResponse.class);
+            return containsAlreadyRegisteredHint(response.description())
+                    || containsAlreadyRegisteredHint(response.exceptionMessage());
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private boolean isPotentialAlreadyRegisteredStatus(HttpStatusCode statusCode) {
+        int value = statusCode.value();
+        return value == 400 || value == 401 || value == 409;
+    }
+
+    private boolean containsAlreadyRegisteredHint(String message) {
+        if (message == null || message.isBlank()) {
+            return false;
+        }
+        String lowerCase = message.toLowerCase();
+        return lowerCase.contains("уже зарегистр") || lowerCase.contains("already registered");
+    }
+
     public void deleteChatFallback(long chatId, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         } else {
             logger.error("Circuit Breaker: Удаление чата недоступно. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
         }
     }
 
-    public void addLinkFallback(long chatId, Throwable t) {
+    public void addLinkFallback(long chatId, String link, List<String> tags, List<String> filters, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
-        } else {
-            logger.error("Circuit Breaker: Добавление ссылки недоступно. Chat ID: {}", chatId);
-            throw new RuntimeException("Сервис временно недоступен.");
+            throw e;
         }
+        logger.error(
+                "Circuit Breaker: Добавление ссылки недоступно. Chat ID: {}, URL: {}",
+                chatId,
+                link);
+        throw new RuntimeException("Сервис временно недоступен.");
     }
 
-    public void removeLinkFallback(long chatId, Throwable t) {
+    public void removeLinkFallback(long chatId, String link, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
-        } else {
-            logger.error("Circuit Breaker: Удаление ссылки недоступно. Chat ID: {}", chatId);
-            throw new RuntimeException("Сервис временно недоступен.");
+            throw e;
         }
+        logger.error(
+                "Circuit Breaker: Удаление ссылки недоступно. Chat ID: {}, URL: {}",
+                chatId,
+                link);
+        throw new RuntimeException("Сервис временно недоступен.");
     }
 
     public ListLinksResponse getLinksFallback(long chatId, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         } else {
             logger.error("Circuit Breaker: Получение ссылок недоступно. Chat ID: {}", chatId);
             return new ListLinksResponse(Collections.emptyList(), 0);

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Регистрация</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #eef2f5; margin: 0; padding: 0; }
+        .container { width: 420px; margin: 60px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        form { display: flex; flex-direction: column; gap: 12px; }
+        input[type="text"], input[type="password"] { padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+        button { padding: 10px; border: none; border-radius: 8px; background-color: #1abc9c; color: #fff; cursor: pointer; }
+        button:hover { background-color: #16a085; }
+        .message { color: #c0392b; text-align: center; }
+        .back-link { text-align: center; margin-top: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Регистрация</h1>
+    <div th:if="${error}" class="message" th:text="${error}"></div>
+    <form th:action="@{/ui/register}" method="post" th:object="${registrationRequest}">
+        <input type="text" th:field="*{username}" placeholder="Имя пользователя" />
+        <div class="message" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+        <input type="password" th:field="*{password}" placeholder="Пароль" />
+        <div class="message" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <button type="submit">Создать аккаунт</button>
+    </form>
+    <div class="back-link">
+        <a th:href="@{/ui/login}">Назад к авторизации</a>
+    </div>
+</div>
+</body>
+</html>

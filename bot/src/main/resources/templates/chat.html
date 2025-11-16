@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Web Bot</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f2f5f8; margin: 0; }
+        header { background-color: #007bff; color: #fff; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+        header a { color: #fff; text-decoration: none; }
+        .chat-container { max-width: 900px; margin: 30px auto; background: #fff; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 80vh; }
+        .messages { flex: 1; padding: 24px; overflow-y: auto; }
+        .message { margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; max-width: 70%; }
+        .message.user { background-color: #e1f0ff; align-self: flex-end; }
+        .message.bot { background-color: #f1f1f1; align-self: flex-start; }
+        .message strong { display: block; margin-bottom: 6px; }
+        form { display: flex; gap: 10px; padding: 16px; border-top: 1px solid #eee; }
+        input[type="text"] { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ccc; }
+        button { padding: 12px 20px; border: none; border-radius: 10px; background-color: #007bff; color: #fff; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .hint { padding: 0 24px 12px; color: #555; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+<header>
+    <div>Онлайн-версия бота — <span th:text="${username}"></span></div>
+    <a th:href="@{/ui/logout}">Выйти</a>
+</header>
+<div class="chat-container">
+    <div class="messages" id="messages">
+        <div th:if="${#lists.isEmpty(messages)}" id="empty-state">Пока нет сообщений. Попробуйте отправить /start или /help.</div>
+        <div th:each="message : ${messages}" th:class="${'message ' + (#strings.equals(message.author, 'Вы') ? 'user' : 'bot')}">
+            <strong th:text="${message.author}"></strong>
+            <span th:text="${message.content}"></span>
+        </div>
+    </div>
+    <div class="hint">Интерфейс принимает те же команды, что и Telegram-бот.</div>
+    <form th:action="@{/ui/chat/send}" method="post">
+        <input type="text" name="message" placeholder="Введите команду или сообщение" required />
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <button type="submit">Отправить</button>
+    </form>
+</div>
+<script>
+    (function() {
+        const messagesContainer = document.getElementById('messages');
+        let emptyState = document.getElementById('empty-state');
+
+        function appendMessage(author, content) {
+            if (!messagesContainer) {
+                return;
+            }
+            if (emptyState) {
+                emptyState.remove();
+                emptyState = null;
+            }
+            const wrapper = document.createElement('div');
+            wrapper.className = 'message ' + (author === 'Вы' ? 'user' : 'bot');
+
+            const strong = document.createElement('strong');
+            strong.textContent = author;
+
+            const span = document.createElement('span');
+            span.textContent = content;
+
+            wrapper.appendChild(strong);
+            wrapper.appendChild(span);
+            messagesContainer.appendChild(wrapper);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        if (window.EventSource) {
+            const eventSource = new EventSource('/ui/chat/stream');
+            eventSource.onmessage = function(event) {
+                try {
+                    const payload = JSON.parse(event.data);
+                    appendMessage(payload.author, payload.content);
+                } catch (e) {
+                    console.warn('Не удалось обработать сообщение', e);
+                }
+            };
+            eventSource.onerror = function() {
+                console.warn('SSE соединение разорвано');
+            };
+        }
+    })();
+</script>
+</body>
+</html>
