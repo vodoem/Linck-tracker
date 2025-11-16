@@ -1,7 +1,6 @@
 package backend.academy.bot.controller;
 
-import backend.academy.bot.client.TelegramClient;
-import backend.academy.bot.service.RedisCacheService;
+import backend.academy.bot.service.NotificationRouter;
 import backend.academy.model.LinkUpdate;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import jakarta.validation.Valid;
@@ -16,51 +15,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/updates")
 public class UpdateController {
 
-    private final TelegramClient telegramClient;
-    private final RedisCacheService redisCacheService;
+    private final NotificationRouter notificationRouter;
 
-    public UpdateController(TelegramClient telegramClient, RedisCacheService redisCacheService) {
-        this.telegramClient = telegramClient;
-        this.redisCacheService = redisCacheService;
+    public UpdateController(NotificationRouter notificationRouter) {
+        this.notificationRouter = notificationRouter;
     }
 
     @PostMapping
     @RateLimiter(name = "updateControllerRateLimiter", fallbackMethod = "rateLimitFallback")
     public ResponseEntity<Void> handleUpdate(@RequestBody @Valid LinkUpdate linkUpdate) {
-        // Логика обработки обновления
         System.out.println("Получено обновление: " + linkUpdate);
-
-        // Отправка уведомлений в чаты
-        if (linkUpdate.tgChatIds() != null && !linkUpdate.tgChatIds().isEmpty()) {
-            for (Long chatId : linkUpdate.tgChatIds()) {
-                String mode = redisCacheService.getNotificationMode(chatId);
-
-                if ("immediate".equals(mode)) {
-                    sendNotification(chatId, linkUpdate);
-                } else {
-                    // Сохраняем уведомление в Redis для дайджеста
-                    String notification = "Обновление ссылки:\n"
-                            + "URL: " + linkUpdate.url() + "\n"
-                            + "Описание: " + linkUpdate.description();
-                    redisCacheService.addNotificationToBatch(chatId, notification);
-                }
-            }
-        } else {
-            System.out.println("Нет chatId для отправки уведомления.");
-        }
-
+        notificationRouter.dispatchUpdate(linkUpdate);
         return ResponseEntity.ok().build();
-    }
-
-    private void sendNotification(Long chatId, LinkUpdate update) {
-        // Отправка уведомлений в чаты
-        if (update.tgChatIds() != null && !update.tgChatIds().isEmpty()) {
-            String message =
-                    "Обновление ссылки:\n" + "URL: " + update.url() + "\n" + "Описание: " + update.description();
-            telegramClient.sendMessage(chatId, message);
-        } else {
-            System.out.println("Нет chatId для отправки уведомления.");
-        }
     }
 
     // Fallback метод

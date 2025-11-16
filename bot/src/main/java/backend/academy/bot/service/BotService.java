@@ -1,6 +1,5 @@
 package backend.academy.bot.service;
 
-import backend.academy.bot.client.TelegramClient;
 import backend.academy.bot.exception.ChatAlreadyRegisteredException;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
@@ -17,7 +16,7 @@ public class BotService {
     private final CommunicationService communicationService;
     private final BotStateMachine botStateMachine;
     private final RedisCacheService redisCacheService;
-    private final TelegramClient telegramClient;
+    private final NotificationRouter notificationRouter;
     private static final Pattern URL_PATTERN =
             Pattern.compile("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w- ./?%&=]*)?$", Pattern.CASE_INSENSITIVE);
 
@@ -25,11 +24,11 @@ public class BotService {
             CommunicationService communicationService,
             BotStateMachine botStateMachine,
             RedisCacheService redisCacheService,
-            TelegramClient telegramClient) {
+            NotificationRouter notificationRouter) {
         this.communicationService = communicationService;
         this.botStateMachine = botStateMachine;
         this.redisCacheService = redisCacheService;
-        this.telegramClient = telegramClient;
+        this.notificationRouter = notificationRouter;
     }
     // Обработка команд
     public String handleCommand(String command, long chatId) {
@@ -205,7 +204,7 @@ public class BotService {
 
             // Формируем дайджест
             String digestMessage = "Дайджест обновлений:\n" + String.join("\n\n", notifications);
-            telegramClient.sendMessage(chatId, digestMessage);
+            notificationRouter.dispatchDigest(chatId, digestMessage);
 
             // Очищаем батч
             redisCacheService.clearNotificationBatch(chatId);

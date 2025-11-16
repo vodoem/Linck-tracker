@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import backend.academy.bot.client.ScrapperClient;
-import backend.academy.bot.client.TelegramClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import java.util.List;
@@ -19,7 +18,7 @@ class BotServiceDuplicateLinkTest {
     private BotStateMachine botStateMachine;
     private CommunicationService communicationService;
     private RedisCacheService redisCacheService;
-    private TelegramClient telegramClient;
+    private NotificationRouter notificationRouter;
 
     @BeforeEach
     void setUp() {
@@ -27,13 +26,13 @@ class BotServiceDuplicateLinkTest {
         scrapperClient = Mockito.mock(ScrapperClient.class);
         botStateMachine = Mockito.mock(BotStateMachine.class);
         redisCacheService = Mockito.mock(RedisCacheService.class);
-        telegramClient = Mockito.mock(TelegramClient.class);
+        notificationRouter = Mockito.mock(NotificationRouter.class);
 
         // Создаем мок для CommunicationService
         communicationService = Mockito.mock(HttpCommunicationService.class);
 
         // Инициализируем BotService с моками
-        botService = new BotService(communicationService, botStateMachine, redisCacheService, telegramClient);
+        botService = new BotService(communicationService, botStateMachine, redisCacheService, notificationRouter);
     }
 
     @Test

@@ -1,7 +1,6 @@
 package backend.academy.bot.kafka;
 
-import backend.academy.bot.client.TelegramClient;
-import backend.academy.bot.service.RedisCacheService;
+import backend.academy.bot.service.NotificationRouter;
 import backend.academy.model.KafkaResponse;
 import backend.academy.model.LinkUpdate;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -12,17 +11,14 @@ import org.springframework.stereotype.Service;
 // @ConditionalOnProperty(name = "app.message-transport", havingValue = "Kafka")
 public class KafkaConsumerService {
 
-    private final TelegramClient telegramClient;
     private final KafkaCommunicationService kafkaCommunicationService;
-    private final RedisCacheService redisCacheService;
+    private final NotificationRouter notificationRouter;
 
     public KafkaConsumerService(
-            TelegramClient telegramClient,
             KafkaCommunicationService kafkaCommunicationService,
-            RedisCacheService redisCacheService) {
-        this.telegramClient = telegramClient;
+            NotificationRouter notificationRouter) {
         this.kafkaCommunicationService = kafkaCommunicationService;
-        this.redisCacheService = redisCacheService;
+        this.notificationRouter = notificationRouter;
     }
 
     @KafkaListener(topics = "${kafka.topic.response-topic}", groupId = "bot-group")
@@ -35,38 +31,6 @@ public class KafkaConsumerService {
     public void handleLinkUpdate(LinkUpdate linkUpdate) {
         System.out.println("Получено обновление ссылки: " + linkUpdate);
 
-        try {
-            if (linkUpdate.tgChatIds() != null && !linkUpdate.tgChatIds().isEmpty()) {
-                for (Long chatId : linkUpdate.tgChatIds()) {
-                    String mode = redisCacheService.getNotificationMode(chatId);
-
-                    if ("immediate".equals(mode)) {
-                        sendNotification(chatId, linkUpdate);
-                    } else {
-                        // Сохраняем уведомление в Redis для дайджеста
-                        String notification = "Обновление ссылки:\n"
-                                + "URL: " + linkUpdate.url() + "\n"
-                                + "Описание: " + linkUpdate.description();
-                        redisCacheService.addNotificationToBatch(chatId, notification);
-                    }
-                }
-            } else {
-                throw new IllegalArgumentException("Отсутствуют chatId для отправки уведомления.");
-            }
-        } catch (Exception e) {
-            System.err.println("Ошибка при обработке обновления: " + e.getMessage());
-            throw e;
-        }
-    }
-
-    private void sendNotification(Long chatId, LinkUpdate update) {
-        // Отправка уведомлений в чаты
-        if (update.tgChatIds() != null && !update.tgChatIds().isEmpty()) {
-            String message =
-                    "Обновление ссылки:\n" + "URL: " + update.url() + "\n" + "Описание: " + update.description();
-            telegramClient.sendMessage(chatId, message);
-        } else {
-            System.out.println("Нет chatId для отправки уведомления.");
-        }
+        notificationRouter.dispatchUpdate(linkUpdate);
     }
 }
