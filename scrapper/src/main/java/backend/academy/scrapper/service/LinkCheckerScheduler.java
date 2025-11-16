@@ -159,9 +159,11 @@ public class LinkCheckerScheduler {
     }
 
     private void sendUpdate(long chatId, String link, String description) {
-        LinkUpdate update = new LinkUpdate(
-                chatId, link, description, List.of(chatId) // Отправляем уведомление только этому чату
-                );
+        List<Long> targetChatIds = linkRepository.getChatIdsByUrl(link);
+        List<Long> recipients = (targetChatIds == null || targetChatIds.isEmpty())
+                ? List.of(chatId)
+                : targetChatIds;
+        LinkUpdate update = new LinkUpdate(chatId, link, description, recipients);
         communicationService.sendUpdate(update);
     }
 

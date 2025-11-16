@@ -193,4 +193,12 @@ public class SqlLinkRepository implements LinkRepository {
     """;
         return jdbcTemplate.query(sql, new Object[] {chatId, url}, (rs, rowNum) -> rs.getString("value"));
     }
+
+    @Override
+    public List<Long> getChatIdsByUrl(String url) {
+        return jdbcTemplate.queryForList(
+                "SELECT DISTINCT chat_id FROM tracked_link WHERE url = ?",
+                Long.class,
+                url);
+    }
 }

@@ -155,4 +155,9 @@ public class OrmLinkRepository implements LinkRepository {
     public List<String> getFiltersForLink(long chatId, String url) {
         return trackedLinkRepository.getFiltersForLink(chatId, url);
     }
+
+    @Override
+    public List<Long> getChatIdsByUrl(String url) {
+        return trackedLinkRepository.findChatIdsByUrl(url);
+    }
 }

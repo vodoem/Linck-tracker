@@ -27,4 +27,6 @@ public interface LinkRepository {
     boolean existsByChatIdAndUrl(long chatId, String url);
 
     List<String> getFiltersForLink(long chatId, String url);
+
+    List<Long> getChatIdsByUrl(String url);
 }
