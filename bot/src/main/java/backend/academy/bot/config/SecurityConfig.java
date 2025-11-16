@@ -22,11 +22,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+                .csrf(csrf -> csrf.ignoringRequestMatchers(
+                        "/h2-console/**",
+                        "/updates",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/actuator/**"))
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ui/login", "/ui/register", "/css/**", "/js/**", "/h2-console/**")
+                        .requestMatchers(
+                                "/updates",
+                                "/ui/login",
+                                "/ui/register",
+                                "/css/**",
+                                "/js/**",
+                                "/h2-console/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/actuator/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
