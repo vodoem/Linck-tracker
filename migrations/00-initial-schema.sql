@@ -7,7 +7,7 @@ CREATE TABLE tg_chat (
 -- Таблица отслеживаемых ссылок
 CREATE TABLE tracked_link (
     id SERIAL PRIMARY KEY,
-    url TEXT NOT NULL,
+    url TEXT UNIQUE NOT NULL,
     chat_id BIGINT REFERENCES tg_chat(id) ON DELETE CASCADE,
     last_checked TIMESTAMP DEFAULT NOW(),
     CONSTRAINT unique_url_per_chat UNIQUE (url, chat_id)

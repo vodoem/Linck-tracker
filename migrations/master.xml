@@ -6,4 +6,5 @@
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.14.xsd">
 
     <include file="00-initial-schema.sql" relativeToChangelogFile="true"/>
+    <include file="01-drop-tracked-link-url-unique.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>
