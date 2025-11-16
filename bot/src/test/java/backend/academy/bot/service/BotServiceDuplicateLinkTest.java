@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import backend.academy.bot.client.ScrapperClient;
+import backend.academy.bot.client.TelegramClient;
 import backend.academy.model.LinkResponse;
 import backend.academy.model.ListLinksResponse;
 import java.util.List;
@@ -11,16 +12,28 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class BotServiceDuplicateLinkTest {
+class BotServiceDuplicateLinkTest {
+
     private BotService botService;
     private ScrapperClient scrapperClient;
     private BotStateMachine botStateMachine;
+    private CommunicationService communicationService;
+    private RedisCacheService redisCacheService;
+    private TelegramClient telegramClient;
 
     @BeforeEach
     void setUp() {
+        // Мокаем все зависимости
         scrapperClient = Mockito.mock(ScrapperClient.class);
         botStateMachine = Mockito.mock(BotStateMachine.class);
-        botService = new BotService(scrapperClient, botStateMachine);
+        redisCacheService = Mockito.mock(RedisCacheService.class);
+        telegramClient = Mockito.mock(TelegramClient.class);
+
+        // Создаем мок для CommunicationService
+        communicationService = Mockito.mock(HttpCommunicationService.class);
+
+        // Инициализируем BotService с моками
+        botService = new BotService(communicationService, botStateMachine, redisCacheService, telegramClient);
     }
 
     @Test
@@ -30,15 +43,17 @@ public class BotServiceDuplicateLinkTest {
         String link = "https://example.com";
         LinkResponse linkResponse = new LinkResponse(1L, link, List.of(), List.of());
         ListLinksResponse listLinksResponse = new ListLinksResponse(List.of(linkResponse), 1);
-        when(scrapperClient.getLinks(chatId)).thenReturn(listLinksResponse);
+
+        // Настройка поведения моков
         when(botStateMachine.getState(chatId)).thenReturn("waiting_for_link");
+        when(communicationService.getLinks(chatId)).thenReturn(listLinksResponse);
 
         // Act
         String response = botService.handleTextMessage(chatId, link);
 
         // Assert
         assertEquals("Ссылка уже отслеживается.", response);
-        verify(scrapperClient, never()).addLink(anyLong(), anyString(), anyList(), anyList());
+        verify(communicationService, never()).addLink(anyLong(), anyString(), anyList(), anyList());
         verify(botStateMachine).clearState(chatId);
     }
 }
