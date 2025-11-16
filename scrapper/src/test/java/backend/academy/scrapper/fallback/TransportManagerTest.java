@@ -49,4 +49,18 @@ public class TransportManagerTest extends AbstractIntegrationTest {
         // Assert
         assertEquals("Kafka", dynamicCommunicationService.getCurrentTransport());
     }
+
+    @Test
+    void shouldReturnToPreferredTransportWhenItBecomesAvailable() {
+        // Arrange
+        when(healthChecker.isHttpAvailable()).thenReturn(true);
+        when(healthChecker.isKafkaAvailable()).thenReturn(true);
+        dynamicCommunicationService.setCurrentTransport("Kafka");
+
+        // Act
+        transportManager.checkAndSwitchTransport();
+
+        // Assert
+        assertEquals("HTTP", dynamicCommunicationService.getCurrentTransport());
+    }
 }
