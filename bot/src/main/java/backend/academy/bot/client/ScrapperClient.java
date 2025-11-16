@@ -53,7 +53,7 @@ public class ScrapperClient {
             }
         } catch (HttpClientErrorException e) {
             // 4xx ошибки (ни Retry, ни Circuit Breaker)
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         }
     }
 
@@ -215,7 +215,7 @@ public class ScrapperClient {
 
     public void registerChatFallback(long chatId, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         } else {
             logger.error("Circuit Breaker: Регистрация чата недоступна. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
@@ -224,7 +224,7 @@ public class ScrapperClient {
 
     public void deleteChatFallback(long chatId, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         } else {
             logger.error("Circuit Breaker: Удаление чата недоступно. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
@@ -233,7 +233,7 @@ public class ScrapperClient {
 
     public void addLinkFallback(long chatId, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         } else {
             logger.error("Circuit Breaker: Добавление ссылки недоступно. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
@@ -242,7 +242,7 @@ public class ScrapperClient {
 
     public void removeLinkFallback(long chatId, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         } else {
             logger.error("Circuit Breaker: Удаление ссылки недоступно. Chat ID: {}", chatId);
             throw new RuntimeException("Сервис временно недоступен.");
@@ -251,7 +251,7 @@ public class ScrapperClient {
 
     public ListLinksResponse getLinksFallback(long chatId, Throwable t) {
         if (t instanceof HttpClientErrorException e) {
-            throw new HttpClientErrorException(e.getStatusCode(), "Клиентская ошибка: ");
+            throw e;
         } else {
             logger.error("Circuit Breaker: Получение ссылок недоступно. Chat ID: {}", chatId);
             return new ListLinksResponse(Collections.emptyList(), 0);
