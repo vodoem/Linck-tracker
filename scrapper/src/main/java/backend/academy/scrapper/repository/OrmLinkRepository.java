@@ -9,6 +9,7 @@ import backend.academy.scrapper.repository.repos.TgChatRepository;
 import backend.academy.scrapper.repository.repos.TrackedLinkRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,16 +41,18 @@ public class OrmLinkRepository implements LinkRepository {
         newLink.setLastChecked(LocalDateTime.now());
 
         // Добавляем теги
-        tags.forEach(tagName -> {
+        nullToEmpty(tags).forEach(tagName -> {
             Tag tag = new Tag();
             tag.setName(tagName);
+            tag.setLink(newLink);
             newLink.getTags().add(tag);
         });
 
         // Добавляем фильтры
-        filters.forEach(filterValue -> {
+        nullToEmpty(filters).forEach(filterValue -> {
             Filter filter = new Filter();
             filter.setValue(filterValue);
+            filter.setLink(newLink);
             newLink.getFilters().add(filter);
         });
 
@@ -98,7 +101,7 @@ public class OrmLinkRepository implements LinkRepository {
                 .findByChatIdAndUrl(chatId, url)
                 .orElseThrow(() -> new IllegalArgumentException("Ссылка не найдена."));
 
-        tags.forEach(tagName -> {
+        nullToEmpty(tags).forEach(tagName -> {
             Tag tag = new Tag();
             tag.setName(tagName);
             tag.setLink(link);
@@ -130,6 +133,10 @@ public class OrmLinkRepository implements LinkRepository {
     public List<LinkResponse> getLinksByTag(long chatId, String tagName) {
         List<TrackedLink> trackedLinks = trackedLinkRepository.findByChatIdAndTagName(chatId, tagName);
         return mapToLinkResponses(trackedLinks);
+    }
+
+    private List<String> nullToEmpty(List<String> values) {
+        return values == null ? Collections.emptyList() : values;
     }
 
     private List<LinkResponse> mapToLinkResponses(List<TrackedLink> trackedLinks) {

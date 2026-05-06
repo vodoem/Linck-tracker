@@ -7,6 +7,7 @@ import backend.academy.model.RemoveLinkRequest;
 import backend.academy.model.RemoveTagRequest;
 import backend.academy.scrapper.exceptionhandler.ResourceNotFoundException;
 import backend.academy.scrapper.repository.LinkRepository;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class LinkService {
             throw new IllegalArgumentException("Ссылка уже отслеживается.");
         }
 
-        linkRepository.addLink(chatId, request.link(), request.tags(), request.filters());
+        linkRepository.addLink(chatId, request.link(), nullToEmpty(request.tags()), nullToEmpty(request.filters()));
     }
 
     @Transactional
@@ -74,7 +75,7 @@ public class LinkService {
             throw new ResourceNotFoundException("Ссылка не найдена.");
         }
 
-        linkRepository.addTags(chatId, url, tags);
+        linkRepository.addTags(chatId, url, nullToEmpty(tags));
     }
 
     @Transactional
@@ -97,6 +98,10 @@ public class LinkService {
     public ListLinksResponse getLinksByTag(long chatId, String tagName) {
         List<LinkResponse> links = linkRepository.getLinksByTag(chatId, tagName);
         return new ListLinksResponse(links, links.size());
+    }
+
+    private List<String> nullToEmpty(List<String> values) {
+        return values == null ? Collections.emptyList() : values;
     }
 
     private void validateUrl(String url) {

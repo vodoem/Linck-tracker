@@ -17,16 +17,16 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/scrapper
     username: postgres
-    password: postgres
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-    jpa:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
       hibernate:
-        ddl-auto: update
-      properties:
-        hibernate:
-          jdbc:
-            lob:
-              non_contextual_creation: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
   liquibase:
     enabled: false
   kafka:
