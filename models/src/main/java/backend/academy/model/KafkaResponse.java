@@ -1,3 +1,5 @@
 package backend.academy.model;
 
-public record KafkaResponse(String correlationId, Object data) {}
+public sealed interface KafkaResponse permits KafkaLinksResponse, KafkaTagsResponse {
+    String correlationId();
+}

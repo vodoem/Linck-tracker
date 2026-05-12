@@ -34,7 +34,9 @@ public class TelegramClient {
                 new BotCommand("addtags", "Добавить теги к ссылке"),
                 new BotCommand("removetag", "Удалить тег из ссылки"),
                 new BotCommand("listtags", "Показать все теги для ссылки"),
-                new BotCommand("filterbytag", "Показать ссылки с указанным тегом")));
+                new BotCommand("filterbytag", "Показать ссылки с указанным тегом"),
+                new BotCommand("settings", "Показать текущие настройки уведомлений"),
+                new BotCommand("setmode", "Выбрать режим уведомлений (immediate/digest)")));
         if (!response.isOk()) {
             throw new RuntimeException("Failed to set commands: " + response.description());
         }

@@ -1,7 +1,5 @@
 package backend.academy.bot.kafka;
 
-import backend.academy.model.AddLinkRequest;
-import backend.academy.model.AddTagsRequest;
 import backend.academy.model.GetLinksByTagRequest;
 import backend.academy.model.GetLinksRequest;
 import backend.academy.model.GetTagsForLinkRequest;
@@ -9,12 +7,9 @@ import backend.academy.model.KafkaAddLinkRequest;
 import backend.academy.model.KafkaAddTagsRequest;
 import backend.academy.model.KafkaRemoveLinkRequest;
 import backend.academy.model.KafkaRemoveTagRequest;
-import backend.academy.model.RemoveLinkRequest;
-import backend.academy.model.RemoveTagRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import java.util.List;
 
 @Service
 public class KafkaProducerService {

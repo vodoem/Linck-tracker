@@ -26,7 +26,6 @@ public class OrmLinkRepository implements LinkRepository {
     @Override
     @Transactional
     public void addLink(long chatId, String url, List<String> tags, List<String> filters) {
-
         // Получаем или создаем чат
         TgChat chat = tgChatRepository.findById(chatId).orElseGet(() -> {
             TgChat newChat = new TgChat();
@@ -155,5 +154,10 @@ public class OrmLinkRepository implements LinkRepository {
     @Override
     public boolean existsByChatIdAndUrl(long chatId, String url) {
         return trackedLinkRepository.existsByChatIdAndUrl(chatId, url);
+    }
+
+    @Override
+    public List<String> getFiltersForLink(long chatId, String url) {
+        return trackedLinkRepository.getFiltersForLink(chatId, url);
     }
 }

@@ -1,7 +1,6 @@
 package backend.academy.scrapper.kafka;
 
 import backend.academy.model.KafkaLinksResponse;
-import backend.academy.model.KafkaResponse;
 import backend.academy.model.KafkaTagsResponse;
 import backend.academy.model.LinkUpdate;
 import org.springframework.beans.factory.annotation.Value;

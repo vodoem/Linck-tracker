@@ -66,4 +66,9 @@ public class HttpLinkRepository implements LinkRepository {
     public boolean existsByChatIdAndUrl(long chatId, String url) {
         return false;
     }
+
+    @Override
+    public List<String> getFiltersForLink(long chatId, String url) {
+        return List.of();
+    }
 }

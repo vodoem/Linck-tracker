@@ -1,11 +1,13 @@
 package backend.academy.scrapper.repository;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.TestcontainersConfiguration;
 
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractIntegrationTest {
