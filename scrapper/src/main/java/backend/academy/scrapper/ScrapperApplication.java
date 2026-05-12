@@ -13,22 +13,32 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableRetry
 public class ScrapperApplication {
+    private static final String DEFAULT_JDBC_URL = "jdbc:postgresql://localhost:5433/scrapper";
+    private static final String DEFAULT_DB_USERNAME = "postgres";
+    private static final String DEFAULT_DB_PASSWORD = "postgres";
+    private static final String DEFAULT_CHANGELOG_PATH = "migrations/master.xml";
+
     public static void main(String[] args) {
+        runMigrations();
+        SpringApplication.run(ScrapperApplication.class, args);
+    }
 
-        // Настройки для миграций
-        String jdbcUrl = "jdbc:postgresql://localhost:5433/scrapper";
-        String username = "postgres";
-        String password = System.getenv("DB_PASSWORD");
-        String changelogPath = "/migrations/master.xml";
+    private static void runMigrations() {
+        String jdbcUrl = getEnvOrDefault("DB_URL", DEFAULT_JDBC_URL);
+        String username = getEnvOrDefault("DB_USERNAME", DEFAULT_DB_USERNAME);
+        String password = getEnvOrDefault("DB_PASSWORD", DEFAULT_DB_PASSWORD);
+        String changelogPath = getEnvOrDefault("DB_CHANGELOG_PATH", DEFAULT_CHANGELOG_PATH);
 
-        // Запуск миграций
         try {
             LiquibaseMigrationRunner.runMigrations(jdbcUrl, username, password, changelogPath);
         } catch (Exception e) {
             System.err.println("Не удалось выполнить миграции: " + e.getMessage());
             throw new RuntimeException("Ошибка при выполнении миграций", e);
         }
+    }
 
-        SpringApplication.run(ScrapperApplication.class, args);
+    private static String getEnvOrDefault(String name, String defaultValue) {
+        String value = System.getenv(name);
+        return value == null || value.isBlank() ? defaultValue : value;
     }
 }

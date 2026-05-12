@@ -9,8 +9,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
-@Testcontainers
-@Import(TestcontainersConfiguration.class)
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractIntegrationTest {
 
     @Container
@@ -31,7 +30,7 @@ public abstract class AbstractIntegrationTest {
         String jdbcUrl = POSTGRES.getJdbcUrl();
         String username = POSTGRES.getUsername();
         String password = POSTGRES.getPassword();
-        String changelogPath = "/migrations/master.xml";
+        String changelogPath = "migrations/master.xml";
 
         // Запускаем миграции
         LiquibaseMigrationRunner.runMigrations(jdbcUrl, username, password, changelogPath);

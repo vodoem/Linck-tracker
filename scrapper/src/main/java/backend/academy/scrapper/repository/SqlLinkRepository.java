@@ -52,16 +52,19 @@ public class SqlLinkRepository implements LinkRepository {
 
         int linkId = Objects.requireNonNull(keyHolder.getKey()).intValue();
 
+        List<String> safeTags = nullToEmpty(tags);
+        List<String> safeFilters = nullToEmpty(filters);
+
         // Добавляем теги
-        if (!tags.isEmpty()) {
+        if (!safeTags.isEmpty()) {
             List<Object[]> tagArgs =
-                    tags.stream().map(tag -> new Object[] {linkId, tag}).collect(Collectors.toList());
+                    safeTags.stream().map(tag -> new Object[] {linkId, tag}).collect(Collectors.toList());
             jdbcTemplate.batchUpdate("INSERT INTO tag (link_id, name) VALUES (?, ?)", tagArgs);
         }
 
         // Добавляем фильтры
-        if (!filters.isEmpty()) {
-            List<Object[]> filterArgs = filters.stream()
+        if (!safeFilters.isEmpty()) {
+            List<Object[]> filterArgs = safeFilters.stream()
                     .map(filter -> new Object[] {linkId, filter})
                     .collect(Collectors.toList());
             jdbcTemplate.batchUpdate("INSERT INTO filter (link_id, value) VALUES (?, ?)", filterArgs);
@@ -112,8 +115,9 @@ public class SqlLinkRepository implements LinkRepository {
         Integer linkId = jdbcTemplate.queryForObject(
                 "SELECT id FROM tracked_link WHERE url = ? AND chat_id = ?", Integer.class, url, chatId);
 
-        List<Object[]> tagArgs =
-                tags.stream().map(tag -> new Object[] {linkId, tag}).collect(Collectors.toList());
+        List<Object[]> tagArgs = nullToEmpty(tags).stream()
+                .map(tag -> new Object[] {linkId, tag})
+                .collect(Collectors.toList());
 
         jdbcTemplate.batchUpdate("INSERT INTO tag (link_id, name) VALUES (?, ?)", tagArgs);
     }
@@ -151,6 +155,10 @@ public class SqlLinkRepository implements LinkRepository {
     """;
 
         return fetchLinks(sql, chatId, tagName);
+    }
+
+    private List<String> nullToEmpty(List<String> values) {
+        return values == null ? Collections.emptyList() : values;
     }
 
     private List<LinkResponse> fetchLinks(String sql, Object... params) {
