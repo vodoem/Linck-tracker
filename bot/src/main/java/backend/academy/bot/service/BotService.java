@@ -32,94 +32,120 @@ public class BotService {
     }
     // Обработка команд
     public String handleCommand(String command, long chatId) {
+        return handleCommandWithKeyboard(command, chatId).text();
+    }
+
+    public BotReply handleCommandWithKeyboard(String command, long chatId) {
         if (command == null) {
             System.out.println("Текст сообщения равен null. Пропускаем обработку.");
-            return "Извините, я не могу обработать это сообщение.";
+            return mainReply("Извините, я не могу обработать это сообщение.");
         }
         switch (command) {
             case "/start":
                 communicationService.registerChat(chatId);
                 redisCacheService.setNotificationMode(chatId, "immediate");
-                return "Добро пожаловать! Используйте /help для просмотра доступных команд.";
+                return mainReply(
+                        "Добро пожаловать! Я добавил удобные кнопки ниже — начните с добавления ссылки или посмотрите список отслеживаемого.");
             case "/help":
-                return """
-                    Доступные команды:
-                    /start - регистрация пользователя
-                    /track - добавить ссылку для отслеживания
-                    /untrack - удалить ссылку из отслеживания
-                    /list - показать список отслеживаемых ссылок
-                    /addtags <url> <tag1> <tag2> ... — добавить теги к ссылке.
-                    /removetag <url> <tag> — удалить тег из ссылки.
-                    /listtags <url> — показать все теги для ссылки.
-                    /filterbytag <tag> — показать только ссылки с указанным тегом.
-                    /settings - показать настройки уведомлений
-                    /setmode <immediate|digest> - выбрать режим уведомлений
-                    """;
+                return mainReply(
+                        """
+                    Главное меню вынесено в кнопки:
+                    ➕ Добавить ссылку — основной сценарий отслеживания.
+                    📋 Мои ссылки — быстрый просмотр всех ссылок.
+                    ➖ Удалить ссылку — остановить отслеживание.
+                    🏷 Теги — добавить, удалить, посмотреть теги и фильтровать ссылки.
+                    🔔 Уведомления — выбрать моментальные уведомления или ежедневный дайджест.
+
+                    Команды через / по-прежнему работают, если они вам удобны.
+                    """);
             case "/track":
                 botStateMachine.setState(chatId, "waiting_for_link");
-                return "Введите ссылку для отслеживания.";
+                return inputReply("Отправьте ссылку, которую нужно отслеживать.");
             case "/untrack":
                 botStateMachine.setState(chatId, "waiting_for_untrack_link");
-                return "Введите ссылку для удаления.";
+                return inputReply("Отправьте ссылку, которую нужно удалить из отслеживания.");
             case "/list":
                 ListLinksResponse linksResponse = communicationService.getLinks(chatId);
                 if (linksResponse.links().isEmpty()) {
-                    return "У вас нет отслеживаемых ссылок.";
+                    return mainReply("У вас пока нет отслеживаемых ссылок. Нажмите «➕ Добавить ссылку», чтобы начать.");
                 }
-                return "Ваши отслеживаемые ссылки:\n"
-                        + linksResponse.links().stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
+                return mainReply("Ваши отслеживаемые ссылки:\n"
+                        + linksResponse.links().stream().map(LinkResponse::url).collect(Collectors.joining("\n")));
             case "/addtags":
                 botStateMachine.setState(chatId, "waiting_for_addtags");
-                return "Введите URL и теги через пробел.";
+                return inputReply("Отправьте URL и теги через пробел. Например: https://example.com java backend");
             case "/removetag":
                 botStateMachine.setState(chatId, "waiting_for_removetag");
-                return "Введите URL и имя тега через пробел.";
+                return inputReply("Отправьте URL и имя тега через пробел. Например: https://example.com java");
             case "/listtags":
                 botStateMachine.setState(chatId, "waiting_for_listtags");
-                return "Введите URL для просмотра тегов.";
+                return inputReply("Отправьте URL ссылки, для которой нужно показать теги.");
             case "/filterbytag":
                 botStateMachine.setState(chatId, "waiting_for_filterbytag");
-                return "Введите имя тега для фильтрации ссылок.";
+                return inputReply("Отправьте имя тега, по которому нужно найти ссылки.");
             case "/settings":
                 String mode = redisCacheService.getNotificationMode(chatId);
-                return "Текущий режим уведомлений: " + (mode != null ? mode : "сразу");
+                return settingsReply("Текущий режим уведомлений: " + formatNotificationMode(mode)
+                        + "\nВыберите удобный режим кнопкой ниже.");
 
             case "/setmode immediate":
                 redisCacheService.setNotificationMode(chatId, "immediate");
-                return "Режим уведомлений установлен: сразу.";
+                return mainReply("Режим уведомлений установлен: сразу.");
 
             case "/setmode digest":
                 redisCacheService.setNotificationMode(chatId, "digest");
-                return "Режим уведомлений установлен: дайджест раз в сутки.";
+                return mainReply("Режим уведомлений установлен: дайджест раз в сутки.");
             default:
-                return "Неизвестная команда. Используйте /help для просмотра доступных команд.";
+                return mainReply("Неизвестная команда. Используйте /help для просмотра доступных команд.");
         }
     }
 
     // Обработка текстовых сообщений
     public String handleTextMessage(long chatId, String message) {
+        return handleTextMessageWithKeyboard(chatId, message).text();
+    }
+
+    public BotReply handleTextMessageWithKeyboard(long chatId, String message) {
+        if (message == null) {
+            return mainReply("Извините, я не могу обработать это сообщение.");
+        }
+        if (BotKeyboards.CANCEL.equals(message)) {
+            botStateMachine.clearState(chatId);
+            return mainReply("Действие отменено. Выберите следующий шаг в меню.");
+        }
+
         String currentState = botStateMachine.getState(chatId);
+        if (currentState == null || currentState.isEmpty()) {
+            return handleMenuMessage(message, chatId);
+        }
+
+        if (BotKeyboards.SKIP.equals(message)) {
+            message = "-";
+        }
+
         switch (currentState) {
             case "waiting_for_link":
                 if (!isValidUrl(message)) {
                     botStateMachine.clearState(chatId);
-                    return "Некорректная ссылка. Пожалуйста, введите корректный URL.";
+                    return mainReply(
+                            "Некорректная ссылка. Пожалуйста, нажмите «➕ Добавить ссылку» и отправьте корректный URL.");
                 }
 
                 // Получаем текущие ссылки для чата
+                String trackedLinkCandidate = message;
                 ListLinksResponse linksResponse = communicationService.getLinks(chatId);
                 boolean isLinkAlreadyTracked = linksResponse.links().stream()
-                        .anyMatch(link -> link.url().equals(message));
+                        .anyMatch(link -> link.url().equals(trackedLinkCandidate));
 
                 if (isLinkAlreadyTracked) {
                     botStateMachine.clearState(chatId);
-                    return "Ссылка уже отслеживается.";
+                    return mainReply("Ссылка уже отслеживается.");
                 }
 
                 // Добавляем ссылку
                 botStateMachine.setPendingLink(chatId, message);
                 botStateMachine.setState(chatId, "waiting_for_tags");
-                return "Введите тэги (через пробел). Если тэги не нужны, отправьте -";
+                return optionalInputReply("Введите теги через пробел или нажмите «⏭ Пропустить», если теги не нужны.");
             case "waiting_for_tags":
                 List<String> tags = Arrays.asList(message.trim().split("\\s+"));
                 if (tags.size() == 1 && "-".equals(tags.get(0))) {
@@ -128,7 +154,8 @@ public class BotService {
                     botStateMachine.setPendingTags(chatId, tags);
                 }
                 botStateMachine.setState(chatId, "waiting_for_filters");
-                return "Настройте фильтры (например, user:dummy type:comment). Если фильтры не нужны, отправьте -";
+                return optionalInputReply(
+                        "Настройте фильтры (например, user:dummy type:comment) или нажмите «⏭ Пропустить».");
 
             case "waiting_for_filters":
                 List<String> filters = Arrays.asList(message.trim().split("\\s+"));
@@ -145,42 +172,100 @@ public class BotService {
 
                 communicationService.addLink(chatId, link, pendingTags, pendingFilters);
                 botStateMachine.clearState(chatId);
-                return "Ссылка успешно добавлена с тэгами: " + pendingTags + " и фильтрами: " + pendingFilters;
+                return mainReply(
+                        "Ссылка успешно добавлена с тегами: " + pendingTags + " и фильтрами: " + pendingFilters);
             case "waiting_for_untrack_link":
                 communicationService.removeLink(chatId, message);
                 botStateMachine.clearState(chatId);
-                return "Ссылка удалена из отслеживания.";
+                return mainReply("Ссылка удалена из отслеживания.");
 
             case "waiting_for_addtags":
-                String[] parts = message.split(" ");
+                String[] parts = message.trim().split("\\s+");
+                if (parts.length < 2) {
+                    return inputReply("Нужно отправить URL и хотя бы один тег. Например: https://example.com java");
+                }
                 String url = parts[0];
                 List<String> tagsForUrl = Arrays.asList(Arrays.copyOfRange(parts, 1, parts.length));
                 communicationService.addTags(chatId, url, tagsForUrl);
                 botStateMachine.clearState(chatId);
-                return "Теги успешно добавлены.";
+                return mainReply("Теги успешно добавлены.");
 
             case "waiting_for_removetag":
-                String[] removeParts = message.split(" ");
+                String[] removeParts = message.trim().split("\\s+");
+                if (removeParts.length < 2) {
+                    return inputReply("Нужно отправить URL и имя тега. Например: https://example.com java");
+                }
                 String removeUrl = removeParts[0];
                 String tagName = removeParts[1];
                 communicationService.removeTag(chatId, removeUrl, tagName);
                 botStateMachine.clearState(chatId);
-                return "Тег успешно удален.";
+                return mainReply("Тег успешно удален.");
 
             case "waiting_for_listtags":
                 List<String> tagsList = communicationService.getTagsForLink(chatId, message);
                 botStateMachine.clearState(chatId);
-                return "Теги для ссылки: " + String.join(", ", tagsList);
+                return mainReply("Теги для ссылки: " + String.join(", ", tagsList));
 
             case "waiting_for_filterbytag":
                 List<LinkResponse> filteredLinks = communicationService.getLinksByTag(chatId, message);
                 botStateMachine.clearState(chatId);
-                return "Ссылки с тегом '" + message + "':\n"
-                        + filteredLinks.stream().map(LinkResponse::url).collect(Collectors.joining("\n"));
+                return mainReply("Ссылки с тегом '" + message + "':\n"
+                        + filteredLinks.stream().map(LinkResponse::url).collect(Collectors.joining("\n")));
 
             default:
-                return "Неизвестное сообщение. Используйте /help для просмотра доступных команд.";
+                return mainReply("Неизвестное сообщение. Выберите действие кнопкой ниже или используйте /help.");
         }
+    }
+
+    private BotReply handleMenuMessage(String message, long chatId) {
+        return switch (message) {
+            case BotKeyboards.TRACK -> handleCommandWithKeyboard("/track", chatId);
+            case BotKeyboards.LIST -> handleCommandWithKeyboard("/list", chatId);
+            case BotKeyboards.UNTRACK -> handleCommandWithKeyboard("/untrack", chatId);
+            case BotKeyboards.ADD_TAGS -> handleCommandWithKeyboard("/addtags", chatId);
+            case BotKeyboards.REMOVE_TAG -> handleCommandWithKeyboard("/removetag", chatId);
+            case BotKeyboards.LIST_TAGS -> handleCommandWithKeyboard("/listtags", chatId);
+            case BotKeyboards.FILTER_BY_TAG -> handleCommandWithKeyboard("/filterbytag", chatId);
+            case BotKeyboards.HELP, BotKeyboards.BACK -> handleCommandWithKeyboard("/help", chatId);
+            case BotKeyboards.SETTINGS -> handleCommandWithKeyboard("/settings", chatId);
+            case BotKeyboards.IMMEDIATE_MODE -> handleCommandWithKeyboard("/setmode immediate", chatId);
+            case BotKeyboards.DIGEST_MODE -> handleCommandWithKeyboard("/setmode digest", chatId);
+            case BotKeyboards.TAGS -> tagsReply("Выберите действие с тегами.");
+            default -> {
+                if (message != null && message.startsWith("/")) {
+                    yield handleCommandWithKeyboard(message, chatId);
+                }
+                yield mainReply("Неизвестное сообщение. Выберите действие кнопкой ниже или используйте /help.");
+            }
+        };
+    }
+
+    private BotReply mainReply(String text) {
+        return new BotReply(text, BotKeyboards.mainMenu());
+    }
+
+    private BotReply tagsReply(String text) {
+        return new BotReply(text, BotKeyboards.tagsMenu());
+    }
+
+    private BotReply settingsReply(String text) {
+        return new BotReply(text, BotKeyboards.settingsMenu());
+    }
+
+    private BotReply inputReply(String text) {
+        return new BotReply(text, BotKeyboards.inputMenu());
+    }
+
+    private BotReply optionalInputReply(String text) {
+        return new BotReply(text, BotKeyboards.optionalInputMenu());
+    }
+
+    private String formatNotificationMode(String mode) {
+        return switch (mode == null ? "immediate" : mode) {
+            case "digest" -> "дайджест раз в сутки";
+            case "immediate" -> "сразу";
+            default -> mode;
+        };
     }
 
     @Scheduled(cron = "${app.digest}") // Например, "0 0 10 * * ?" (каждый день в 10:00)
