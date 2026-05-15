@@ -40,7 +40,7 @@ public class KafkaConsumerService {
                 for (Long chatId : linkUpdate.tgChatIds()) {
                     String mode = redisCacheService.getNotificationMode(chatId);
 
-                    if ("immediate".equals(mode)) {
+                    if (isImmediateMode(mode)) {
                         sendNotification(chatId, linkUpdate);
                     } else {
                         // Сохраняем уведомление в Redis для дайджеста
@@ -57,6 +57,10 @@ public class KafkaConsumerService {
             System.err.println("Ошибка при обработке обновления: " + e.getMessage());
             throw e;
         }
+    }
+
+    private boolean isImmediateMode(String mode) {
+        return mode == null || "immediate".equals(mode);
     }
 
     private void sendNotification(Long chatId, LinkUpdate update) {
