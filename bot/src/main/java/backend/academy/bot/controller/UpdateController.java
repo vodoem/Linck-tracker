@@ -35,7 +35,7 @@ public class UpdateController {
             for (Long chatId : linkUpdate.tgChatIds()) {
                 String mode = redisCacheService.getNotificationMode(chatId);
 
-                if ("immediate".equals(mode)) {
+                if (isImmediateMode(mode)) {
                     sendNotification(chatId, linkUpdate);
                 } else {
                     // Сохраняем уведомление в Redis для дайджеста
@@ -50,6 +50,10 @@ public class UpdateController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    private boolean isImmediateMode(String mode) {
+        return mode == null || "immediate".equals(mode);
     }
 
     private void sendNotification(Long chatId, LinkUpdate update) {

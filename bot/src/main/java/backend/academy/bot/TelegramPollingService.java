@@ -1,6 +1,7 @@
 package backend.academy.bot;
 
 import backend.academy.bot.client.ScrapperClient;
+import backend.academy.bot.service.BotReply;
 import backend.academy.bot.service.BotService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.ChatMember;
@@ -42,13 +43,13 @@ public class TelegramPollingService {
                     System.out.println("Получено сообщение без текста от chatId=" + chatId);
                     continue;
                 }
+                BotReply reply;
                 if (text.startsWith("/")) {
-                    String response = botService.handleCommand(text, chatId);
-                    telegramBot.execute(new SendMessage(chatId, response));
+                    reply = botService.handleCommandWithKeyboard(text, chatId);
                 } else {
-                    String response = botService.handleTextMessage(chatId, text);
-                    telegramBot.execute(new SendMessage(chatId, response));
+                    reply = botService.handleTextMessageWithKeyboard(chatId, text);
                 }
+                telegramBot.execute(new SendMessage(chatId, reply.text()).replyMarkup(reply.keyboard()));
             } else if (update.myChatMember() != null) {
                 // Обработка изменения статуса чата
                 handleMyChatMember(update.myChatMember());
