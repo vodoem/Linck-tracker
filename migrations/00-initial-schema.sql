@@ -27,7 +27,26 @@ CREATE TABLE filter (
     value TEXT NOT NULL
 );
 
+-- Проектная таблица состояния отслеживаемого ресурса
+CREATE TABLE tracked_link_state (
+    tracked_link_state_id BIGSERIAL PRIMARY KEY,
+    tracked_link_id BIGINT NOT NULL,
+    last_event_id TEXT,
+    last_activity_at TIMESTAMP,
+    state_hash TEXT,
+    state_payload JSONB,
+    checked_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT fk_tracked_link_state_link
+        FOREIGN KEY (tracked_link_id)
+        REFERENCES tracked_link(id)
+        ON DELETE CASCADE,
+    CONSTRAINT uq_tracked_link_state_link UNIQUE (tracked_link_id)
+);
+
 -- Индексы
 CREATE INDEX idx_tracked_link_chat_id ON tracked_link(chat_id);
 CREATE INDEX idx_tag_link_id ON tag(link_id);
 CREATE INDEX idx_filter_link_id ON filter(link_id);
+CREATE INDEX idx_tracked_link_state_tracked_link_id ON tracked_link_state(tracked_link_id);

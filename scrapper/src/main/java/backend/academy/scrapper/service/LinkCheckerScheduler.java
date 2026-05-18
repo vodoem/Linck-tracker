@@ -93,24 +93,17 @@ public class LinkCheckerScheduler {
         executor.shutdown(); // Останавливаем пул потоков после завершения
     }
 
-    private List<List<LinkResponse>> splitIntoSubBatches(List<LinkResponse> links, int numThreads) {
+    List<List<LinkResponse>> splitIntoSubBatches(List<LinkResponse> links, int numThreads) {
         // Если список ссылок пустой, возвращаем пустой список
         if (links.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // Если размер списка меньше или равен числу потоков, каждый поток обрабатывает одну ссылку
-        if (links.size() <= numThreads) {
-            return links.stream()
-                    .map(Collections::singletonList) // Каждая ссылка в отдельном списке
-                    .toList();
-        }
+        int effectiveNumThreads = Math.max(1, numThreads);
+        int subBatchSize = Math.max(1, (int) Math.ceil((double) links.size() / effectiveNumThreads));
 
-        // Иначе делим список на подбатчи
-        int subBatchSize = (int) Math.ceil((double) links.size() / numThreads);
-        return IntStream.range(0, numThreads)
-                .mapToObj(i -> links.subList(i * subBatchSize, Math.min((i + 1) * subBatchSize, links.size())))
-                .filter(subList -> !subList.isEmpty()) // Исключаем пустые подсписки
+        return IntStream.iterate(0, startIndex -> startIndex < links.size(), startIndex -> startIndex + subBatchSize)
+                .mapToObj(startIndex -> links.subList(startIndex, Math.min(startIndex + subBatchSize, links.size())))
                 .toList();
     }
 
