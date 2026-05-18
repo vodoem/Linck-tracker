@@ -10,6 +10,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "tracked_link_state")
@@ -32,6 +34,7 @@ public class TrackedLinkState {
     @Column(name = "state_hash")
     private String stateHash;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "state_payload", columnDefinition = "jsonb")
     private JsonNode statePayload;
 
